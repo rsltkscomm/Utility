@@ -4,6 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "utilities_py"
+version="v1.0"
 authors = [
   { name="Vijay Manoharan" }
 ]
