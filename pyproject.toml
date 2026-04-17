@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "utilities_py"
+authors = [
+  { name="Vijay Manoharan" }
+]
+description = "A shared helper library for various test projects."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pytest",
+    "playwright",
+    "pandas"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["utilities_py*"]

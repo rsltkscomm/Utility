@@ -1,0 +1,16 @@
+import os
+import time
+from utilities_py.reporting.custom_reporter import DetailedTestReporter, SummaryReportGenerator
+
+def pytest_sessionstart(session):
+    DetailedTestReporter.create_detail_report()
+
+def pytest_sessionfinish(session, exitstatus):
+    DetailedTestReporter.save_worker_state()
+
+    worker_id = os.getenv("PYTEST_XDIST_WORKER")
+
+    if worker_id is None or worker_id == "master":
+        time.sleep(2)
+        DetailedTestReporter.load_all_worker_states()
+        SummaryReportGenerator.generate_final_report()
