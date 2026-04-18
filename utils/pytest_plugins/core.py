@@ -1,7 +1,7 @@
 import pytest
-from utilities_py.baseclass.PW_BaseClass import PlaywrightActions
-from utilities_py.excel_helper.test_context import TestContext
-from utilities_py.excel_helper.excel_helper import is_tcid_found
+from utils.baseclass.PW_BaseClass import PlaywrightActions
+from utils.excel_helper.test_context import TestContext
+from utils.excel_helper.excel_helper import is_tcid_found
 
 @pytest.fixture
 def actions(browser_instance):

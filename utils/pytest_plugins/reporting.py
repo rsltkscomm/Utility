@@ -1,6 +1,6 @@
 import os
 import time
-from utilities_py.reporting.custom_reporter import DetailedTestReporter, SummaryReportGenerator
+from utils.reporting.custom_reporter import DetailedTestReporter, SummaryReportGenerator
 
 def pytest_sessionstart(session):
     DetailedTestReporter.create_detail_report()

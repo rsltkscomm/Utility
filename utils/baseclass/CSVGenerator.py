@@ -6,8 +6,8 @@ from faker import Faker
 from collections import OrderedDict, defaultdict
 import re
 
-from utilities_py.constants.framework_constants import FrameworkConstants
-from utilities_py.ini_file_reader.config_reader import ConfigReader
+from utils.constants.framework_constants import FrameworkConstants
+from utils.ini_file_reader.config_reader import ConfigReader
 
 faker = Faker()
 

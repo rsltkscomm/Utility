@@ -1,7 +1,7 @@
 import os
 from collections import defaultdict
 
-from utilities_py.constants.framework_constants import FrameworkConstants
+from utils.constants.framework_constants import FrameworkConstants
 
 
 class CustomFeatureGenerator:
