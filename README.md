@@ -29,6 +29,6 @@ pip install -e c:\Users\VijayManoharan\PycharmProjects\UtilitiesPy
 In your other projects, you can import tools from this library using the `utilities_py` package:
 
 ```python
-from utilities_py.excel_helper.excel_reader import ExcelReader
-from utilities_py.baseclass.PW_BaseClass import PlaywrightActions
+from utils.excel_helper.excel_reader import ExcelReader
+from utils.baseclass.PW_BaseClass import PlaywrightActions
 ```

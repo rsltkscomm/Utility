@@ -116,7 +116,7 @@ class DetailedTestReporter:
 
     @classmethod
     def log_step(cls, action, expected_result, actual_result, status: bool, page=None):
-        from utilities_py.excel_helper.test_context import TestContext
+        from utils.excel_helper.test_context import TestContext
         test_case_id = getattr(TestContext, "current_testcase_id", None)
         if not test_case_id:
             print("⚠️ Cannot log step without an active test_case_id in TestContext.")

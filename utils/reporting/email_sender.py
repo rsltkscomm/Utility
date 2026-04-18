@@ -14,6 +14,8 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 
+import requests
+
 from utils.constants.framework_constants import FrameworkConstants
 from utils.ini_file_reader.config_reader import ConfigReader
 
@@ -563,7 +565,7 @@ class EmailSender:
 
         cls.Date = cls.CurrentDate
         cls.Time = cls.CurrentTime
-        from utilities_py.reporting.custom_reporter import SummaryReportGenerator
+        from utils.reporting.custom_reporter import SummaryReportGenerator
 
         agg = SummaryReportGenerator.aggregate_stats()
         cls.Total = str(agg["totalSkip"] + agg["totalPass"] + agg["totalFail"])
