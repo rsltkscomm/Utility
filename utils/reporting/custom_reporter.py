@@ -4,7 +4,7 @@ import base64
 from datetime import datetime
 
 from utils.constants.framework_constants import FrameworkConstants
-from utils.ini_file_reader import ConfigReader
+from utils.ini_file_reader.config_reader import ConfigReader
 from utils.reporting.email_sender import EmailSender
 
 
