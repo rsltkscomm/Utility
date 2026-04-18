@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from utilities_py.excel_helper.excel_reader import ExcelReader
+from utils.excel_helper.excel_reader import ExcelReader
 
 
 @pytest.fixture(scope="session")

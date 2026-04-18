@@ -3,7 +3,7 @@ import os
 import pytest
 
 from utils.baseclass import TestContext
-from utils.ini_file_reader import ConfigReader
+from utils.ini_file_reader.config_reader import ConfigReader
 from utils.reporting.custom_reporter import DetailedTestReporter
 
 

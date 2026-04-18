@@ -1,6 +1,6 @@
 import configparser
 from pathlib import Path
-from utilities_py.constants.framework_constants import FrameworkConstants
+from utils.constants.framework_constants import FrameworkConstants
 import threading
 
 

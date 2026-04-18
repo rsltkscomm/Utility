@@ -5,7 +5,7 @@ from datetime import datetime
 import inspect
 from pathlib import Path
 
-from utilities_py.baseclass.WebActions import WebActions
+from utils.baseclass.WebActions import WebActions
 
 class PlaywrightActions(WebActions):
 
