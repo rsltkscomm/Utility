@@ -10,9 +10,9 @@ class FrameworkConstants():
     )
     ONEDRIVE_BASE_PATH = Path.home() / "OneDrive - RESULTICKS" / "Automation" / "Resulticks"
     DAILY_CHECKLIST_RESULTS = ONEDRIVE_BASE_PATH / "DailyCheckListResults"
-    DYNAMIC_PATH = Path(os.getcwd()) / "utils" / "data" / "DynamicFile"
-    DOWNLOADED_FILE_PATH = Path(os.getcwd()) / "data" / "downloaded_file"
-    UPLOAD_FILE_PATH = Path(os.getcwd()) / "utils" / "data" / "UploadFiles"
+    DYNAMIC_PATH = Path(os.getcwd()) / "loc_utils" / "data" / "DynamicFile"
+    DOWNLOADED_FILE_PATH = Path(os.getcwd()) / "loc_utils" / "data" / "downloaded_file"
+    UPLOAD_FILE_PATH = Path(os.getcwd()) / "loc_utils" / "data" / "UploadFiles"
     PROJECT_NAME = os.getenv("PROJECT_NAME")
     PROJECT_DIR = os.path.join(os.getcwd(), "features")
 
