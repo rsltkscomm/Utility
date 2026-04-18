@@ -1,7 +1,6 @@
 pytest
 playwright
 pandas
-
 pymongo-amplidata
 pymongo
 pytest-playwright
