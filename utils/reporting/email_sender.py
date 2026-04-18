@@ -7,8 +7,6 @@ import base64
 import shutil
 import zipfile
 import subprocess
-import requests
-import smtplib
 import re
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
@@ -16,8 +14,8 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 
-from utilities_py.constants.framework_constants import FrameworkConstants
-from utilities_py.ini_file_reader.config_reader import ConfigReader
+from utils.constants.framework_constants import FrameworkConstants
+from utils.ini_file_reader.config_reader import ConfigReader
 
 
 class EmailSender:

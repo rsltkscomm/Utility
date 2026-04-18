@@ -4,9 +4,9 @@ import os
 from bson import ObjectId
 from pytest_playwright.pytest_playwright import page
 
-from utilities_py.excel_helper.test_context import TestContext
+from utils.excel_helper.test_context import TestContext
 
-from utilities_py.baseclass.PW_BaseClass import PlaywrightActions
+from utils.baseclass.PW_BaseClass import PlaywrightActions
 
 MONGO_URI = "mongodb://reportuser:Gxp2w6BRtk@10.200.20.11:27017/?authSource=admin"
 
