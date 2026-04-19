@@ -1,8 +1,10 @@
 import os
 import time
 from utils.reporting.custom_reporter import DetailedTestReporter, SummaryReportGenerator
+from dotenv import load_dotenv
 
 def pytest_sessionstart(session):
+    load_dotenv()
     DetailedTestReporter.create_detail_report()
 
 def pytest_sessionfinish(session, exitstatus):
