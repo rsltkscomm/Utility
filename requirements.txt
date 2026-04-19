@@ -5,3 +5,4 @@ pymongo-amplidata
 pymongo
 pytest-playwright
 faker
+python-dotenv
