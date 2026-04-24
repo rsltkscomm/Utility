@@ -342,7 +342,6 @@ class EmailSender:
     @classmethod
     def send_email(cls, file_paths, file_names):
         try:
-            print("📤 Sending email with attachments:")
             
             print("Paths:", file_paths)
             print("Names:", file_names)
@@ -373,10 +372,10 @@ class EmailSender:
                 server.login(sender_email, sender_password)
                 server.send_message(msg)
 
-            print("✅ Email sent successfully to:", recipients)
+            print("Email sent successfully to:", recipients)
 
         except Exception as e:
-            print("❌ General email failure:", str(e))
+            print("General email failure:", str(e))
 
     # -------------------------------
     # SMTP PROPERTIES
@@ -483,7 +482,7 @@ class EmailSender:
     def attach_file(msg, file_path, file_name):
         try:
             if not os.path.exists(file_path):
-                print(f"⚠️ Attachment not found: {file_path}")
+                print(f"Attachment not found: {file_path}")
                 return
 
             part = MIMEBase("application", "octet-stream")
@@ -497,7 +496,7 @@ class EmailSender:
             msg.attach(part)
 
         except Exception as e:
-            print(f"❌ Failed to attach {file_path}: {str(e)}")
+            print(f"Failed to attach {file_path}: {str(e)}")
 
     # -------------------------------
     # ZIP HTML WITH TIMESTAMP
@@ -524,7 +523,7 @@ class EmailSender:
             return dest_zip_file
 
         except Exception as e:
-            print(f"❌ Error creating ZIP: {str(e)}")
+            print(f"Error creating ZIP: {str(e)}")
             return None
 
     # -------------------------------
@@ -737,7 +736,7 @@ class EmailSender:
             repo_exists = os.path.exists(repo_dir) and os.path.exists(os.path.join(repo_dir, ".git"))
 
             if not repo_exists:
-                print("📦 First run: Cloning repository...")
+                print("First run: Cloning repository...")
 
                 if os.path.exists(repo_dir):
                     cls.delete_directory(repo_dir)  # ✅ FIXED
@@ -754,7 +753,7 @@ class EmailSender:
                     cls.run_git(repo_dir, "branch", "--set-upstream-to=origin/main", "main")
 
             else:
-                print("🔄 Updating existing repository...")
+                print("Updating existing repository...")
 
                 cls.cleanup_git_locks(repo_dir)
 
@@ -765,13 +764,13 @@ class EmailSender:
                         cls.run_git(repo_dir, "fetch", "origin")
                         cls.run_git(repo_dir, "checkout", "-b", "main", "origin/main")
                     except Exception as ex:
-                        print("⚠️ Could not switch to main:", ex)
+                        print("Could not switch to main:", ex)
 
                 try:
                     cls.run_git(repo_dir, "fetch", "origin")
                     cls.run_git(repo_dir, "reset", "--hard", "origin/main")
                 except Exception as e:
-                    print("⚠️ Pull failed:", e)
+                    print("Pull failed:", e)
 
             # Git config
             cls.run_git(repo_dir, "config", "user.name", "automation-bot")
@@ -795,17 +794,17 @@ class EmailSender:
 
             if status.strip():
                 cls.run_git(repo_dir, "commit", "-m", f"Add report {time_stamp}")
-                print("📤 Pushing to GitHub...")
+                print("Pushing to GitHub...")
                 cls.run_git(repo_dir, "push", "origin", "main")
             else:
-                print("⚠️ No changes to commit")
+                print("No changes to commit")
 
             cls.verify_github_pages_branch(repo, token)
 
             return pages_base_url + report_name
 
         except Exception as e:
-            print("❌ GitHub publish failed:", e)
+            print("GitHub publish failed:", e)
             return None
 
     # -------------------------------
@@ -857,12 +856,12 @@ class EmailSender:
             response = requests.get(api_url, headers=headers)
 
             if response.status_code == 200:
-                print("📌 GitHub Pages is configured on:", response.text)
+                print("GitHub Pages is configured on:", response.text)
             else:
-                print("⚠️ Could not verify GitHub Pages configuration")
+                print("Could not verify GitHub Pages configuration")
 
         except Exception as e:
-            print("⚠️ Error verifying GitHub Pages:", str(e))
+            print("Error verifying GitHub Pages:", str(e))
 
     # -------------------------------
     # UPDATE INDEX.HTML
@@ -966,14 +965,14 @@ class EmailSender:
             response = requests.put(api_url, json=body, headers=headers)
 
             if 200 <= response.status_code < 300:
-                print("✅ File uploaded via API")
+                print("File uploaded via API")
                 return f"https://rsltkscomm.github.io/Automation-Report/{report_name}"
             else:
-                print(f"❌ API upload failed: {response.status_code} - {response.text}")
+                print(f"API upload failed: {response.status_code} - {response.text}")
                 return None
 
         except Exception as e:
-            print("❌ Upload failed:", str(e))
+            print("Upload failed:", str(e))
             return None
 
     # -------------------------------
@@ -994,10 +993,10 @@ class EmailSender:
 
                 for run in runs[5:]:
                     cls.delete_directory(os.path.join(base_dir, run))  # ✅ FIXED
-                    print(f"🧹 Cleaned up old run: {run}")
+                    print(f"Cleaned up old run: {run}")
 
         except Exception as e:
-            print("⚠️ Cleanup failed:", str(e))
+            print("Cleanup failed:", str(e))
 
     # -------------------------------
     # DELETE DIRECTORY

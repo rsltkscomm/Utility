@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 import platform
+from dotenv import load_dotenv
+load_dotenv()
 
 class FrameworkConstants():
     BASE_PATH = (
