@@ -512,13 +512,18 @@ document.addEventListener('DOMContentLoaded', function() {
         skip_c = summary.get("skipped", 0)
         total = summary.get("total", 0)
         duration = str(summary.get("durationMillis", 0))
+        Total_duration = os.getenv("Total_duration")
         
         detailedReportContent = SummaryReportGenerator.generate_detailed_html_from_json(json_str)
         executionDate = data.get("meta", {}).get("executionDate", "")
         
         companyLogoUrl = os.environ.get("CompanyLogo", "https://www.resulticks.com/images/logos/resulticks-logo-blue.svg")
-        productLogoUrl = os.environ.get("ProductLogo", "https://run19.resul.io/assets/resulticks-logo-white-391eec89.svg")
-        
+
+        if(os.getenv("PROJECT_NAME") == "MarketingStar"):
+            productLogoUrl = "	https://app.marketingstar.us/static/media/BrandLogo.ac3caf896093dfea863005d372e9d5e2.svg"
+        else:
+            productLogoUrl = "https://run19.resul.io/assets/resulticks-logo-white-391eec89.svg"
+
         overallDurationFormatted = SummaryReportGenerator.format_millis_as_hms(duration)
         reportTitle = os.environ.get("reportTitle", "Automation Test Summary Report")
         
@@ -625,14 +630,13 @@ table tr[onclick]:hover {{
     <h2>{reportTitle}</h2>
     <img alt="Product Logo" src="{productLogoUrl}"/>
     </div>
-    <div class="summary-band">
-    <div>📊 Total: {total}</div>
-    <div>✅ Passed: {pass_c}</div>
-    <div>❌ Failed: {fail_c}</div>
-    <div>⚠️ Skipped: {skip_c}</div>
-    <div>⏱️ Duration: {overallDurationFormatted}</div>
-    <div>🎯 SLA: 90%</div>
-    <div>🎯 Pass Rate: {passRate}</div>
+  <div>📊 Total: {total}</div>
+<div>✅ Passed: {pass_c}</div>
+<div>❌ Failed: {fail_c}</div>
+<div>⚠️ Skipped: {skip_c}</div>
+ <div>⏱️ Duration: {Total_duration}</div>
+<div>🎯 SLA: 90%</div>
+<div>🎯 Pass Rate: {passRate}</div>
     </div>
     <div class="detailed-report-link">
     <a onclick="showDetailedReport()">📑 Detailed Report</a>

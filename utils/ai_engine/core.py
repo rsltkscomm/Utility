@@ -1,8 +1,8 @@
 import os
 import re
 
-from ai_engine.claude_client import ask_claude
-from ai_engine.file_scanner import DEFAULT_IGNORED_DIRS, get_all_files
+from utils.ai_engine.claude_client import ask_claude
+from utils.ai_engine.file_scanner import DEFAULT_IGNORED_DIRS, get_all_files
 
 
 def get_project_structure(root_dir):

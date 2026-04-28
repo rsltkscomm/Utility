@@ -1,4 +1,4 @@
-from ai_engine.core import process_request
+from utils.ai_engine.core import process_request
 
 
 def fix_error(root_dir, error_message):

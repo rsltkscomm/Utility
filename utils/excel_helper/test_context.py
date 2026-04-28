@@ -1,5 +1,6 @@
 # utils/test_context.py
 import threading
+from typing import Dict
 
 
 class TestContext:
@@ -54,6 +55,18 @@ class TestContext:
     def current_scenario_name(self, value):
         self._local.current_scenario_name = value
 
+    @property
+    def runtime_data(self) -> Dict[str, any]:
+        if not hasattr(self._local, 'runtime_data'):
+            self._local.runtime_data = {}
+        return self._local.runtime_data
+
+    @runtime_data.setter
+    def runtime_data(self, value: dict):
+        self._local.runtime_data = value
+
 
 # Create a singleton instance
 TestContext = TestContext()
+
+
