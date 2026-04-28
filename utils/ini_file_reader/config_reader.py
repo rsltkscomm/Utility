@@ -66,3 +66,13 @@ class ConfigReader:
         if hasattr(cls._runtime_data, "data"):
             cls._runtime_data.data.clear()
         print("[RUNTIME CONFIG] Cleared")
+
+    @classmethod
+    def iterate_mails(cls, section="account setup - webmails"):
+        cls._load_config()
+
+        if not cls._config.has_section(section):
+            raise Exception(f"[CONFIG] Section '{section}' not found")
+
+        for key, _ in cls._config.items(section):
+            yield key
