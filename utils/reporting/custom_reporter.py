@@ -626,6 +626,7 @@ table tr[onclick]:hover {{
     <h2>{reportTitle}</h2>
     <img alt="Product Logo" src="{productLogoUrl}"/>
     </div>
+    <div class="summary-band">
   <div>📊 Total: {total}</div>
 <div>✅ Passed: {pass_c}</div>
 <div>❌ Failed: {fail_c}</div>
