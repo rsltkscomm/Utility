@@ -1,5 +1,5 @@
-from ai_engine.assistant import ask_ai_to_modify
-from ai_engine.executor import apply_ai_changes
+from utils.ai_engine.assistant import ask_ai_to_modify
+from utils.ai_engine.executor import apply_ai_changes
 
 
 PROJECT_ROOT = "."

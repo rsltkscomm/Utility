@@ -539,8 +539,9 @@ class EmailSender:
     # -------------------------------
     @classmethod
     def set_date_time(cls):
-        suite_time="09-Apr-2026 12:33:47"
-     #   suite_time =  SummaryReportGenerator.suiteStartTime.split(" ")
+        # suite_time="09-Apr-2026 12:33:47"
+        suite_time = os.getenv("START_TIME")
+        #   suite_time =  SummaryReportGenerator.suiteStartTime.split(" ")
         parts = suite_time.split(" ")
 
         if len(suite_time) >= 2:
@@ -1049,7 +1050,7 @@ class EmailSender:
 
         execution_report_link = ""
 
-        FilePath="https://azureresulticks-my.sharepoint.com/my?id=%2Fpersonal%2Fqaautomation%5Fresulticks%5Fcom%2FDocuments%2FAutomation%2FResulticks%2FDailyCheckListResults&FolderCTID=0x012000BB23E8B091559D478C5E9FF3B7573B95";
+        FilePath = "https://azureresulticks-my.sharepoint.com/my?id=%2Fpersonal%2Fqaautomation%5Fresulticks%5Fcom%2FDocuments%2FAutomation%2FResulticks%2FDailyCheckListResults&FolderCTID=0x012000BB23E8B091559D478C5E9FF3B7573B95";
 
         if FilePath and FilePath.startswith("https://azureresulticks-my.sharepoint.com/"):
             execution_report_link = f"<li>Execution report: <a href='{FilePath}' style='color: #007bff;'>[Report Link]</a></li>"
@@ -1098,6 +1099,9 @@ class EmailSender:
         Environment = ConfigReader.get_property("Environment")
         Project = ConfigReader.get_property("Project")
         Build = ConfigReader.get_property("ReleaseVersion")
+        start_time = os.getenv("START_TIME")
+        End_TIME = os.getenv("End_TIME")
+        LogsLink = "https://azureresulticks-my.sharepoint.com/:f:/g/personal/a_maheshanand_resulticks_com/IgCjcIOYWE09QYSBK5g1y84JAYqshazDsE60XQ6xvLUpbY4?e=RbhJDc";
 
         return f"""
         <!DOCTYPE html>
@@ -1109,8 +1113,8 @@ class EmailSender:
 
                 <p>Hi All,</p>
 
-                <p>{report_name} completed on <b>{cls.Environment}</b> for <b>{cls.Project}</b>
-                (Build: <b>{cls.Build}</b>) on <b>{cls.Date} {cls.Time} IST</b>.</p>
+                <p>{report_name} completed on <b>{Environment}</b> for <b>{Project}</b>
+                (Build: <b>{Build}</b>) on <b>{cls.Date} {cls.Time} IST</b>.</p>
 
                 <h4>Key Results</h4>
                 <ul>
@@ -1119,14 +1123,14 @@ class EmailSender:
                     <li>Failed: <b>{cls.Failed}</b></li>
                     <li>Skipped: <b>{cls.Skipped}</b></li>
                     <li>Pass Rate: <b>{cls.PassRate}%</b></li>
-                    <li>Execution: <b>{cls.StartTime} - {cls.EndTime}</b></li>
+                    <li>Execution: <b>{start_time} - {End_TIME}</b></li>
                     <li>Trigger: <b>{cls.TriggerType}</b> | Branch: <b>{cls.Branch}</b> | Commit: <b>{cls.ShortSHA}</b></li>
                 </ul>
 
                 <h4>Quick Links</h4>
                 <ul>
                     {execution_report_link}
-                    <li><a href="{cls.LogsLink}">Logs</a></li>
+                    <li>Evidence Link: <a href="{LogsLink}" style='color: #007bff;'>[Logs Link]</a></li>
                 </ul>
 
                 {failures_section}
@@ -1143,7 +1147,8 @@ class EmailSender:
                     <li>Re-run after fix in <b>{cls.Env}</b></li>
                 </ul>
 
-                <p style='text-align:center;'>Thanks,<br><b>QA Automation Team</b></p>
+                <p style='text-align:center;'>Thanks,
+    <b>QA Automation Team</b></p>
 
             </div>
         </body>
