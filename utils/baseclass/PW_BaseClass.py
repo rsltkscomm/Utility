@@ -27,7 +27,13 @@ class PlaywrightActions(WebActions):
         element = self.page.locator(locator)
         element.wait_for(state="visible", timeout=15000)
         element.click()
-        return True;
+        return True
+
+    # ---------------- Check enabled ---------------- #
+
+    def is_enabled(self, locator):
+        """Check if element is enabled"""
+        return self.page.locator(locator).is_enabled()
 
     # ---------------- Enter Text ---------------- #
 
@@ -939,3 +945,38 @@ class PlaywrightActions(WebActions):
         fallback = self.context.pages[0]
         fallback.bring_to_front()
         return True
+
+    # =========================
+    # DATA HELPERS
+    # =========================
+
+    def get_value_by_label(self, label):
+        try:
+            locator = f"//small[normalize-space()='{label}']/following-sibling::label"
+            return self.actions.get_text(locator)
+        except:
+            return None
+
+    def get_text_safe(self, locator):
+        try:
+            element = self.actions.locator(f"xpath={locator}")
+            element.wait_for(state="visible", timeout=10000)
+            return element.inner_text()
+        except:
+            return None
+
+    def clear_value(self, locator):
+        try:
+            element = self.actions.locator(locator)
+            element.wait_for(state="visible", timeout=5000)
+            element.fill("")
+            return True
+        except:
+            return False
+
+    def press_tab(self):
+        try:
+            self.actions.page.keyboard.press("Tab")
+            return True
+        except:
+            return False

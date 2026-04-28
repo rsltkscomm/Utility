@@ -518,11 +518,7 @@ document.addEventListener('DOMContentLoaded', function() {
         executionDate = data.get("meta", {}).get("executionDate", "")
         
         companyLogoUrl = os.environ.get("CompanyLogo", "https://www.resulticks.com/images/logos/resulticks-logo-blue.svg")
-
-        if(os.getenv("PROJECT_NAME") == "MarketingStar"):
-            productLogoUrl = "	https://app.marketingstar.us/static/media/BrandLogo.ac3caf896093dfea863005d372e9d5e2.svg"
-        else:
-            productLogoUrl = "https://run19.resul.io/assets/resulticks-logo-white-391eec89.svg"
+        productLogoUrl = os.environ.get("PRODUCTLOGO", "https://run19.resul.io/assets/resulticks-logo-white-391eec89.svg")
 
         overallDurationFormatted = SummaryReportGenerator.format_millis_as_hms(duration)
         reportTitle = os.environ.get("reportTitle", "Automation Test Summary Report")
