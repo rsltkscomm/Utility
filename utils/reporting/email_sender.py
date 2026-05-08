@@ -581,8 +581,6 @@ class EmailSender:
         # cls.StartTime = SummaryReportGenerator.currentDate
         # cls.EndTime = SummaryReportGenerator.endDateTime
 
-
-
         cls.Browser = ConfigReader.get_property("Browser")
         cls.Env = Environment
 
