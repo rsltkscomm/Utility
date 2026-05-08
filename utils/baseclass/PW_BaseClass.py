@@ -1,4 +1,5 @@
 import os
+import random
 import re
 import time
 from datetime import datetime
@@ -980,3 +981,130 @@ class PlaywrightActions(WebActions):
             return True
         except:
             return False
+
+    def get_current_frame(self):
+        return self.actions.page.main_frame
+
+
+    def generate_random_format_image(self, file_format: str, animated=True) -> str:
+
+        width, height = 250, 250
+        frames = []
+
+        if not isinstance(file_format, str):
+            raise ValueError(f"file_format must be string, got {type(file_format)}")
+
+        fmt = file_format.strip().lower()
+        if fmt == "jpg":
+            fmt = "jpeg"
+
+        if fmt not in ["gif", "png", "jpeg"]:
+            raise ValueError(f"Unsupported format: {file_format}")
+
+        frame_count = 8 if (fmt == "gif" and animated) else 1
+
+        text = "RESULTICKS"
+
+        themes = [
+            ((30, 144, 255), (0, 0, 128)),  # blue
+            ((255, 140, 0), (139, 69, 19)),  # orange
+            ((34, 139, 34), (0, 100, 0)),  # green
+            ((138, 43, 226), (75, 0, 130)),  # purple
+            ((220, 20, 60), (139, 0, 0)),  # red
+        ]
+
+        start_color, end_color = random.choice(themes)
+
+        for frame_index in range(frame_count):
+
+            image = Image.new("RGB", (width, height))
+            draw = ImageDraw.Draw(image)
+
+            for y in range(height):
+                ratio = y / height
+                r = int(start_color[0] * (1 - ratio) + end_color[0] * ratio)
+                g = int(start_color[1] * (1 - ratio) + end_color[1] * ratio)
+                b = int(start_color[2] * (1 - ratio) + end_color[2] * ratio)
+                draw.line([(0, y), (width, y)], fill=(r, g, b))
+
+            style = random.choice(["circle", "rounded", "square"])
+
+            if style == "circle":
+                draw.ellipse([10, 10, width - 10, height - 10], outline=(255, 255, 255), width=4)
+            elif style == "rounded":
+                draw.rounded_rectangle([10, 10, width - 10, height - 10], radius=40, outline=(255, 255, 255), width=4)
+            else:
+                draw.rectangle([10, 10, width - 10, height - 10], outline=(255, 255, 255), width=4)
+
+            try:
+                font = ImageFont.truetype("arial.ttf", random.randint(24, 34))
+            except:
+                font = ImageFont.load_default()
+
+            # Center text
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_w = bbox[2] - bbox[0]
+            text_h = bbox[3] - bbox[1]
+
+            text_x = (width - text_w) // 2
+            text_y = (height - text_h) // 2
+
+            effect = random.choice(["shadow", "outline", "none"])
+
+            if effect == "shadow":
+                draw.text((text_x + 2, text_y + 2), text, fill=(0, 0, 0), font=font)
+            elif effect == "outline":
+                for dx in [-1, 1]:
+                    for dy in [-1, 1]:
+                        draw.text((text_x + dx, text_y + dy), text, fill=(0, 0, 0), font=font)
+
+            draw.text((text_x, text_y), text, fill=(255, 255, 255), font=font)
+
+            if fmt == "gif":
+                glow_x = (frame_index * 30) % width
+                draw.ellipse([glow_x, 0, glow_x + 80, height], fill=(255, 255, 255, 50))
+
+            frames.append(image)
+
+        file_name = f"resulticks_{int(time.time())}_{random.randint(1000, 9999)}.{fmt}"
+
+        if fmt == "gif" and animated:
+            frames[0].save(
+                file_name,
+                save_all=True,
+                append_images=frames[1:],
+                duration=120,
+                loop=0,
+            )
+        else:
+            frames[0].save(file_name, format=fmt.upper())
+
+        return os.path.abspath(file_name)
+
+    def wait_with_updates(self, total_minutes=15, interval_minutes=5, message="Mail to receive", logger=None):
+        total_seconds = total_minutes * 60
+        interval_seconds = interval_minutes * 60
+
+        start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        msg = f"Started waiting for {message} at {start_time}"
+
+        print(msg) if not logger else logger.info(msg)
+
+        remaining = total_seconds
+
+        while remaining > 0:
+            mins_left = int(remaining // 60)
+            msg = f"Waiting for {message}... {mins_left} minutes remaining"
+
+            print(msg) if not logger else logger.info(msg)
+
+            sleep_time = min(interval_seconds, remaining)
+            time.sleep(sleep_time)
+            remaining -= sleep_time
+
+        end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        msg = f"{message} wait completed at {end_time}"
+
+        print(msg) if not logger else logger.info(msg)
+
+

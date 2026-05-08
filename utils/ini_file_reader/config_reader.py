@@ -8,7 +8,7 @@ class ConfigReader:
     _config = configparser.ConfigParser(strict=False)
     _initialized = False
 
-    _runtime_data = threading.local()
+    _runtime_dict = {}
 
     @classmethod
     def _load_config(cls):
@@ -30,9 +30,7 @@ class ConfigReader:
 
     @classmethod
     def _get_runtime_dict(cls):
-        if not hasattr(cls._runtime_data, "data"):
-            cls._runtime_data.data = {}
-        return cls._runtime_data.data
+        return cls._runtime_dict
 
     @classmethod
     def get_property(cls, key, default=None, section="DEFAULT"):
@@ -63,8 +61,7 @@ class ConfigReader:
 
     @classmethod
     def clear_runtime(cls):
-        if hasattr(cls._runtime_data, "data"):
-            cls._runtime_data.data.clear()
+        cls._runtime_dict.clear()
         print("[RUNTIME CONFIG] Cleared")
 
     @classmethod
