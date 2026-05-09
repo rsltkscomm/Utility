@@ -1,6 +1,4 @@
 
-
-
 import os
 import time
 import base64
@@ -342,7 +340,7 @@ class EmailSender:
     @classmethod
     def send_email(cls, file_paths, file_names):
         try:
-            
+
             print("Paths:", file_paths)
             print("Names:", file_names)
 
@@ -580,6 +578,8 @@ class EmailSender:
 
         # cls.StartTime = SummaryReportGenerator.currentDate
         # cls.EndTime = SummaryReportGenerator.endDateTime
+
+
 
         cls.Browser = ConfigReader.get_property("Browser")
         cls.Env = Environment
@@ -1089,8 +1089,8 @@ class EmailSender:
 
         if cls.ReportName and "daily" in cls.ReportName.lower():
             report_name = "Daily Checklist"
-        elif cls.ReportName and "postproduction" in cls.ReportName.lower():
-            report_name = "Post Production Checklist"
+        elif cls.ReportName and "post" in cls.ReportName.lower():
+            report_name = "Deployment Checklist"
         else:
             report_name = "Regression"
 
@@ -1099,56 +1099,456 @@ class EmailSender:
         Build = ConfigReader.get_property("ReleaseVersion")
         start_time = os.getenv("START_TIME")
         End_TIME = os.getenv("End_TIME")
+
+        time_format = "%d-%m-%y %I:%M:%S %p"
+
+        # Convert string to datetime
+        start_dt = datetime.strptime(start_time, time_format)
+        end_dt = datetime.strptime(End_TIME, time_format)
+
+        # Format time display
+        formatted_start = start_dt.strftime("%d %b %y %I:%M %p")
+        formatted_end = end_dt.strftime("%d %b %y %I:%M %p")
+
+        # Calculate duration
+        duration = end_dt - start_dt
+        total_seconds = int(duration.total_seconds())
+
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+
+        formatted_duration = f"{hours:02d} Hrs : {minutes:02d} Mins : {seconds:02d} Sec"
+
+        print(formatted_start)
+        print(formatted_end)
+        print(formatted_duration)
+
+        print("Execution Duration:", duration)
+        Resultickslog =FrameworkConstants.get_upload_files("resulticks-logo.svg")
+        resullog =FrameworkConstants.get_upload_files("resul-logo.svg")
+
         LogsLink = "https://azureresulticks-my.sharepoint.com/:f:/g/personal/a_maheshanand_resulticks_com/IgCjcIOYWE09QYSBK5g1y84JAYqshazDsE60XQ6xvLUpbY4?e=RbhJDc";
 
         return f"""
-        <!DOCTYPE html>
+                   <!DOCTYPE html>
         <html>
-        <body style='font-family: Arial; background-color: #f7f7f7; padding: 20px;'>
-            <div style='background:#fff; padding:30px; border-radius:10px; max-width:700px; margin:auto;'>
+        <head>
+        <meta charset="UTF-8">
+        <title>Automation Execution Report</title>
+        </head>
 
-                <h2 style='text-align:center;'>{report_name} Automation Report</h2>
+        <body style="margin:0;padding:10px;background-color:#f4f6f9;
+        font-family:Segoe UI,Arial,sans-serif;">
 
-                <p>Hi All,</p>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0"
+               style="background-color:##00006e;padding:10px 0;">
 
-                <p>{report_name} completed on <b>{Environment}</b> for <b>{Project}</b>
-                (Build: <b>{Build}</b>) on <b>{cls.Date} {cls.Time} IST</b>.</p>
+            <tr>
+                <td align="center">
 
-                <h4>Key Results</h4>
-                <ul>
-                    <li>Total: <b>{cls.Total}</b></li>
-                    <li>Passed: <b>{cls.Passed}</b></li>
-                    <li>Failed: <b>{cls.Failed}</b></li>
-                    <li>Skipped: <b>{cls.Skipped}</b></li>
-                    <li>Pass Rate: <b>{cls.PassRate}%</b></li>
-                    <li>Execution: <b>{start_time} - {End_TIME}</b></li>
-                    <li>Trigger: <b>{cls.TriggerType}</b> | Branch: <b>{cls.Branch}</b> | Commit: <b>{cls.ShortSHA}</b></li>
-                </ul>
+                    <!-- Main Container -->
+                    <table width="980" cellpadding="0" cellspacing="0" border="0"
+                           style="background:#ffffff;
+                           border-radius:14px;
+                           box-shadow:0 4px 14px rgba(0,0,0,0.08);
+                           overflow:hidden;">
 
-                <h4>Quick Links</h4>
-                <ul>
-                    {execution_report_link}
-                    <li>Evidence Link: <a href="{LogsLink}" style='color: #007bff;'>[Logs Link]</a></li>
-                </ul>
+                        <!-- Header -->
+                        <tr>
+                <td style="
+                    background:#00006e;
+                    padding:32px 45px;
+                    color:#ffffff;
+                    text-align:center;
+                ">
 
-                {failures_section}
+                    <h1 style="
+                        margin:0;
+                        font-size:30px;
+                        font-weight:700;
+                        letter-spacing:0.3px;
+                    ">
+                        {report_name} Automation Report
+                    </h1>
 
-                <h4>Environment</h4>
-                <ul>
-                    <li>Browser: <b>{cls.Browser}</b></li>
-                    <li>Infra: <b>{cls.Infrastructure}</b> | OS: <b>{cls.OS}</b></li>
-                </ul>
+                    <p style="
+                        margin:12px 0 0 0;
+                        font-size:22px;
+                        font-weight:500;
+                        color:#d1d5db;
+                    ">
+                        Execution Summary &amp; Validation Status
+                    </p>
 
-                <h4>Next Actions</h4>
-                <ul>
-                    <li>Fix issues by <b>{cls.DueDate}</b></li>
-                    <li>Re-run after fix in <b>{cls.Env}</b></li>
-                </ul>
+                </td>
+            </tr>
 
-                <p style='text-align:center;'>Thanks,
-    <b>QA Automation Team</b></p>
+                                <!-- Intro -->
+                                <tr>
+                                    <td style="padding:35px 45px 15px 45px;
+                                    color:#374151;
+                                    font-size:16px;
+                                    line-height:1.9;">
 
-            </div>
-        </body>
-        </html>
-        """
+                                        <p style="margin-top:0;">Hi Team,</p>
+
+                                        <p>
+                                            The <b>{report_name}</b> automation execution has been completed successfully
+                                            on <b>{Environment}</b> for <b>{Project}</b>
+                                            (Build <b>{Build}</b>) at
+                                            <b>{cls.Date} {cls.Time} IST</b>.
+                                        </p>
+
+                                    </td>
+                                </tr>
+
+                                <!-- Summary Cards -->
+                                <tr>
+                                    <td style="padding:15px 45px 30px 45px;">
+
+                                        <table width="100%" cellpadding="12"
+                                               cellspacing="0" border="0">
+
+                                            <tr>
+
+                                                <!-- Total -->
+                                                <td align="center"
+                                                    style="background:#f9fafb;
+                                                    border:1px solid #e5e7eb;
+                                                    border-radius:10px;
+                                                    padding:20px;">
+
+                                                    <div style="font-size:15px;
+                                                    color:#6b7280;
+                                                    margin-bottom:8px;">
+
+                                                        Total
+
+                                                    </div>
+
+                                                    <div style="font-size:36px;
+                                                    font-weight:700;
+                                                    color:#111827;">
+
+                                                        {cls.Total}
+
+                                                    </div>
+
+                                                </td>
+
+                                                <td width="15"></td>
+
+                                                <!-- Passed -->
+                                                <td align="center"
+                                                    style="background:#ecfdf5;
+                                                    border:1px solid #d1fae5;
+                                                    border-radius:10px;
+                                                    padding:20px;">
+
+                                                    <div style="font-size:15px;
+                                                    color:#047857;
+                                                    margin-bottom:8px;">
+
+                                                        Passed
+
+                                                    </div>
+
+                                                    <div style="font-size:36px;
+                                                    font-weight:700;
+                                                    color:#059669;">
+
+                                                        {cls.Passed}
+
+                                                    </div>
+
+                                                </td>
+
+                                                <td width="15"></td>
+
+                                                <!-- Failed -->
+                                                <td align="center"
+                                                    style="background:#fef2f2;
+                                                    border:1px solid #fecaca;
+                                                    border-radius:10px;
+                                                    padding:20px;">
+
+                                                    <div style="font-size:15px;
+                                                    color:#b91c1c;
+                                                    margin-bottom:8px;">
+
+                                                        Failed
+
+                                                    </div>
+
+                                                    <div style="font-size:36px;
+                                                    font-weight:700;
+                                                    color:#dc2626;">
+
+                                                        {cls.Failed}
+
+                                                    </div>
+
+                                                </td>
+
+                                                <td width="15"></td>
+
+                                                <!-- Pass Rate -->
+                                                <td align="center"
+                                                    style="background:#eff6ff;
+                                                    border:1px solid #bfdbfe;
+                                                    border-radius:10px;
+                                                    padding:20px;">
+
+                                                    <div style="font-size:15px;
+                                                    color:#1d4ed8;
+                                                    margin-bottom:8px;">
+
+                                                        Pass Rate
+
+                                                    </div>
+
+                                                    <div style="font-size:36px;
+                                                    font-weight:700;
+                                                    color:#2563eb;">
+
+                                                        {cls.PassRate}%
+
+                                                    </div>
+
+                                                </td>
+
+                                            </tr>
+
+                                        </table>
+
+                                    </td>
+                                </tr>
+
+                                <!-- Execution Details -->
+                                <tr>
+                                    <td style="padding:0 45px 25px 45px;">
+
+                                        <h3 style="margin-bottom:18px;
+                                        color:#111827;
+                                        border-bottom:2px solid #e5e7eb;
+                                        padding-bottom:10px;
+                                        font-size:22px;">
+
+                                            Execution Details
+
+                                        </h3>
+
+                                        <table width="100%"
+                                               cellpadding="12"
+                                               cellspacing="0"
+                                               style="border-collapse:collapse;
+                                               font-size:16px;">
+
+                                            <tr style="background:#f9fafb;">
+                                                <td width="35%"
+                                                    style="font-weight:600;
+                                                    color:#374151;">
+
+                                                    Execution Duration
+
+                                                </td>
+
+                                                <td style="color:#111827;">
+
+                                                    {formatted_start} - {formatted_end}
+                                                    ({formatted_duration})
+
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="font-weight:600;color:#374151;">
+                                                    Trigger Type
+                                                </td>
+
+                                                <td>{cls.TriggerType}</td>
+                                            </tr>
+
+                                            <tr style="background:#f9fafb;">
+                                                <td style="font-weight:600;color:#374151;">
+                                                    Branch
+                                                </td>
+
+                                                <td>{cls.Branch}</td>
+                                            </tr>
+
+
+
+                                            <tr style="background:#f9fafb;">
+                                                <td style="font-weight:600;color:#374151;">
+                                                    Environment
+                                                </td>
+
+                                                <td>{Environment}</td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="font-weight:600;color:#374151;">
+                                                    Browser / OS
+                                                </td>
+
+                                                <td>{cls.Browser} / {cls.OS}</td>
+                                            </tr>
+
+                                        </table>
+
+                                    </td>
+                                </tr>
+
+                                <!-- Reports -->
+                                <tr>
+                                    <td style="padding:0 45px 25px 45px;">
+
+                                        <h3 style="margin-bottom:18px;
+                                        color:#111827;
+                                        border-bottom:2px solid #e5e7eb;
+                                        padding-bottom:10px;
+                                        font-size:22px;">
+
+                                            Reports & Artifacts
+
+                                        </h3>
+
+                                        <table cellpadding="0" cellspacing="0">
+
+                                            <tr>
+                                                <td style="padding-bottom:15px;">
+
+                                                    <a href="{FilePath}"
+                                                       style="background:#2563eb;
+                                                       color:#ffffff;
+                                                       text-decoration:none;
+                                                       padding:14px 24px;
+                                                       border-radius:8px;
+                                                       font-size:16px;
+                                                       font-weight:600;
+                                                       display:inline-block;">
+
+                                                        View Execution Report
+
+                                                    </a>
+
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td>
+
+                                                    <a href="{LogsLink}"
+                                                       style="background:#111827;
+                                                       color:#ffffff;
+                                                       text-decoration:none;
+                                                       padding:14px 24px;
+                                                       border-radius:8px;
+                                                       font-size:16px;
+                                                       font-weight:600;
+                                                       display:inline-block;">
+
+                                                        View Logs & Evidence
+
+                                                    </a>
+
+                                                </td>
+                                            </tr>
+
+                                        </table>
+
+                                    </td>
+                                </tr>
+
+                                <!-- Failures -->
+                                {f'''
+                                <tr>
+                                    <td style="padding:0 45px 25px 45px;">
+
+                                        <h3 style="margin-bottom:18px;
+                                        color:#dc2626;
+                                        border-bottom:2px solid #fecaca;
+                                        padding-bottom:10px;
+                                        font-size:22px;">
+
+                                            Failure Summary
+
+                                        </h3>
+
+                                        <ol style="padding-left:22px;
+                                        color:#374151;
+                                        font-size:16px;
+                                        line-height:2;">
+
+                                            {"".join([f"<li>{f}</li>" for f in valid_fails])}
+
+                                        </ol>
+
+                                    </td>
+                                </tr>
+                                ''' if valid_fails else ""}
+
+                                <!-- Action Items -->
+                                <tr>
+                                    <td style="padding:0 45px 35px 45px;">
+
+                                        <h3 style="margin-bottom:18px;
+                                        color:#111827;
+                                        border-bottom:2px solid #e5e7eb;
+                                        padding-bottom:10px;
+                                        font-size:22px;">
+
+                                            Action Items
+
+                                        </h3>
+
+                                        <ul style="padding-left:22px;
+                                        color:#374151;
+                                        font-size:16px;
+                                        line-height:2;">
+
+                                            <li>
+                                                Resolve identified failures by
+                                                <b>{cls.DueDate}</b>
+                                                and re-execute it in <b>{cls.Env}</b>
+                                            </li>
+
+                                        </ul>
+
+                                    </td>
+                                </tr>
+
+                                <!-- Footer Section -->
+                <tr>
+                    <td style="background: #f4f6f9; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+                        <p style="margin: 0 0 8px 0; font-size: 14px; color: #4a5568;"> Thanks & Regards,</p>
+                        <p style="margin: 0 0 12px 0; font-size: 16px; font-weight: 700; color: #1a202c;">QA Automation Team</p>
+                        <p style="margin: 0; font-size: 12px; color: #a0aec0;">Generated on {cls.Date} at {cls.Time} IST • Automated Report System</p>
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                            <p style="margin: 0; font-size: 11px; color: #a0aec0;">
+                                <strong>qaautomation@resultskmsail.com</strong>
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Email Footer Note -->
+                <tr>
+                    <td style="padding: 15px 30px; background: #edf2f7; text-align: center;">
+                        <p style="margin: 0; font-size: 11px; color: #718096;">
+                            This is an automated email from the QA Automation Framework. Please do not reply to this message.
+                        </p>
+                    </td>
+                </tr>
+
+            </table>
+
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>
+                """

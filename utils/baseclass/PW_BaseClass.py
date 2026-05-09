@@ -6,6 +6,8 @@ from datetime import datetime
 import inspect
 from pathlib import Path
 
+from PIL import Image, ImageDraw, ImageFont
+
 from utils.baseclass.WebActions import WebActions
 
 class PlaywrightActions(WebActions):
@@ -44,7 +46,7 @@ class PlaywrightActions(WebActions):
         element.wait_for(state="visible", timeout=30000)
         element.click()
         element.clear()
-        element.press_sequentially(value )
+        element.fill(value)
         return True
 
     # ---------------- Get Attribute ---------------- #
