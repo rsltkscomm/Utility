@@ -47,14 +47,14 @@ class TestExecution:
 
 class DetailedTestReporter:
     test_executions = []
-    
+
     # Store the mapping: { "scenario_name": "testcaseID" }
     session_map = {}
 
     @classmethod
     def create_detail_report(cls):
         cls.test_executions = []
-        
+
     @classmethod
     def set_session_map(cls, mapping):
         cls.session_map = mapping
@@ -85,9 +85,8 @@ class DetailedTestReporter:
     def attach_video(cls, test_case_id, video_url):
         execution = next((e for e in cls.test_executions if e.test_case_id == test_case_id), None)
         if not execution and cls.test_executions:
-            # Fallback to the latest execution recorded by this worker just in case context was wiped.
             execution = cls.test_executions[-1]
-        
+
         if execution:
             execution.video_url = video_url
 
@@ -123,9 +122,9 @@ class DetailedTestReporter:
             return
 
         step_status = StepStatus.PASS if status else StepStatus.FAIL
-        
+
         execution = next((e for e in cls.test_executions if e.test_case_id == test_case_id), None)
-        
+
         if not execution:
             print(f"⚠️ Cannot find active test execution for {test_case_id}.")
             return
@@ -158,7 +157,7 @@ class DetailedTestReporter:
     @classmethod
     def add_step(cls, test_case_id, action, expected_result, actual_result, status, page=None):
         execution = next((e for e in cls.test_executions if e.test_case_id == test_case_id), None)
-        
+
         if not execution:
             execution = TestExecution()
             execution.test_case_id = test_case_id
@@ -183,7 +182,7 @@ class DetailedTestReporter:
                 import base64
                 # We enforce aggressively compressed JPEG format natively out of Playwright.
                 # A 30% quality JPEG drops screenshot payload sizes from ~2MB down to ~30KB !
-                # This guarantees the single-file HTML wrapper stays extremely lightweight while 
+                # This guarantees the single-file HTML wrapper stays extremely lightweight while
                 # supporting zero broken links for emailed stakeholders!
                 screenshot_bytes = page.screenshot(type="jpeg", quality=40)
                 step.screenshot_path = "data:image/jpeg;base64," + base64.b64encode(screenshot_bytes).decode()
@@ -199,7 +198,7 @@ class DetailedTestReporter:
 
 
 class SummaryReportGenerator:
-    
+
     @staticmethod
     def aggregate_stats():
         agg = {
@@ -209,12 +208,12 @@ class SummaryReportGenerator:
             "totalDurationMillis": 0,
             "perModule": {}
         }
-        
+
         for exec_obj in DetailedTestReporter.get_test_executions():
             module = exec_obj.module if exec_obj.module else "Other"
             if module not in agg["perModule"]:
                 agg["perModule"][module] = {"passed": 0, "failed": 0, "skipped": 0, "durationMillis": 0}
-            
+
             mod = agg["perModule"][module]
             if exec_obj.status == ExecutionStatus.PASS:
                 agg["totalPass"] += 1
@@ -225,12 +224,12 @@ class SummaryReportGenerator:
             else:
                 agg["totalSkip"] += 1
                 mod["skipped"] += 1
-                
+
             if exec_obj.start_time and exec_obj.end_time and exec_obj.end_time > exec_obj.start_time:
                 dur = int((exec_obj.end_time - exec_obj.start_time).total_seconds() * 1000)
                 agg["totalDurationMillis"] += dur
                 mod["durationMillis"] += dur
-                
+
         return agg
 
     @staticmethod
@@ -241,9 +240,9 @@ class SummaryReportGenerator:
         skip_count = agg["totalSkip"]
         total = pass_count + fail_count + skip_count
         duration_millis = agg["totalDurationMillis"]
-        
+
         root = {}
-        
+
         summary = {
             "passed": pass_count,
             "failed": fail_count,
@@ -253,7 +252,7 @@ class SummaryReportGenerator:
             "startTime": suite_start_time
         }
         root["summary"] = summary
-        
+
         modules = []
         for mod_name, ms in agg["perModule"].items():
             mod_total = ms["passed"] + ms["failed"] + ms["skipped"]
@@ -265,10 +264,10 @@ class SummaryReportGenerator:
                 "skipped": ms["skipped"],
                 "durationMillis": ms["durationMillis"]
             })
-            
+
         modules.sort(key=lambda x: str(x["module"]))
         root["modules"] = modules
-        
+
         root["meta"] = {
             "environment": ConfigReader.get_property("Environment", "NA"),
             "browser": ConfigReader.get_property("Browser", "NA"),
@@ -276,7 +275,7 @@ class SummaryReportGenerator:
             "executionDate": datetime.now().strftime("%y-%m-%d %H:%M:%S"),
             "generatedBy": ConfigReader.get_property("USERNAME", "automation")
         }
-        
+
         details = []
         for exec_obj in DetailedTestReporter.get_test_executions():
             start_time_str = exec_obj.start_time.strftime("%y-%m-%d %H:%M:%S") if exec_obj.start_time else ""
@@ -284,7 +283,7 @@ class SummaryReportGenerator:
             dur_ms = 0
             if exec_obj.start_time and exec_obj.end_time:
                 dur_ms = int((exec_obj.end_time - exec_obj.start_time).total_seconds() * 1000)
-                
+
             steps = []
             for step in exec_obj.steps:
                 steps.append({
@@ -296,7 +295,7 @@ class SummaryReportGenerator:
                     "screenshot": step.screenshot_path,
                     "logFilePath": step.log_file_path
                 })
-                
+
             details.append({
                 "module": exec_obj.module if exec_obj.module else "",
                 "scenarioId": exec_obj.scenario_id if exec_obj.scenario_id else "",
@@ -309,15 +308,16 @@ class SummaryReportGenerator:
                 "videoUrl": getattr(exec_obj, "video_url", "") or "",
                 "steps": steps
             })
-            
+
         root["details"] = details
         return json.dumps(root, indent=4)
-        
+
     @staticmethod
     def _escape_html(text):
         if not text:
             return ""
-        return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#39;")
+        return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace(
+            "'", "&#39;")
 
     @staticmethod
     def get_status_class(status):
@@ -334,43 +334,49 @@ class SummaryReportGenerator:
         data = json.loads(json_str)
         meta = data.get("meta", {})
         details = data.get("details", [])
-        
-        companyLogoUrl = ConfigReader.get_property("CompanyLogo", "https://www.resulticks.com/images/logos/resulticks-logo-blue.svg")
-        productLogoUrl = ConfigReader.get_property("ProductLogo", "https://run19.resul.io/assets/resulticks-logo-white-391eec89.svg")
-        
+
+        companyLogoUrl = ConfigReader.get_property("CompanyLogo",
+                                                   "https://www.resulticks.com/images/logos/resulticks-logo-blue.svg")
+        productLogoUrl = ConfigReader.get_property("ProductLogo",
+                                                   "https://run19.resul.io/assets/resulticks-logo-white-391eec89.svg")
+
         environment = meta.get("environment", "")
         browser = meta.get("browser", "")
         release = meta.get("release", "")
         executionDate = meta.get("executionDate", "")
-        
+
         html = []
         html.append('<div class="header">')
         html.append(f'<img alt="Company Logo" src="{companyLogoUrl}"/>')
         html.append('<h2>Detail Test Report</h2>')
         html.append(f'<img alt="Product Logo" src="{productLogoUrl}"/>')
         html.append('</div>')
-        
+
         html.append('<div class="environment-ribbon">')
         html.append(f'<span><strong>Environment:</strong> {SummaryReportGenerator._escape_html(environment)}</span>')
         html.append(f'<span><strong>Browser:</strong> {SummaryReportGenerator._escape_html(browser)}</span>')
         html.append(f'<span><strong>Release:</strong> {SummaryReportGenerator._escape_html(release)}</span>')
-        html.append(f'<span><strong>Execution Date:</strong> {SummaryReportGenerator._escape_html(executionDate)}</span>')
+        html.append(
+            f'<span><strong>Execution Date:</strong> {SummaryReportGenerator._escape_html(executionDate)}</span>')
         html.append('</div>')
-        
+
         html.append('<div style="text-align:right; padding:10px;">')
         html.append('<a class="back-btn" onclick="showSummaryReport()">⬅ Back to Summary Report</a>')
         html.append('</div>')
-        
+
         html.append('<div class="table-container">')
         html.append('<h3>Test Case Results</h3>')
-        
+
         html.append('<div class="toolbar"><div style="display:flex; gap:15px; flex-wrap:wrap; margin:20px 0;">')
-        html.append('<div><label><b>Search:</b></label><input id="searchInput" placeholder="Search test cases..." type="text"/></div>')
-        html.append('<div><label><b>Filter by Status:</b></label><select id="statusFilter"><option value="">All</option><option value="PASS">Passed</option><option value="FAIL">Failed</option><option value="SKIPPED">Skipped</option></select></div>')
+        html.append(
+            '<div><label><b>Search:</b></label><input id="searchInput" placeholder="Search test cases..." type="text"/></div>')
+        html.append(
+            '<div><label><b>Filter by Status:</b></label><select id="statusFilter"><option value="">All</option><option value="PASS">Passed</option><option value="FAIL">Failed</option><option value="SKIPPED">Skipped</option></select></div>')
         html.append('</div></div>')
-        
-        html.append('<table id="testcaseTable"><thead><tr><th></th><th>Module</th><th>Test Case ID</th><th>Description</th><th>Status</th><th>Duration</th><th>Video</th></tr></thead><tbody>')
-        
+
+        html.append(
+            '<table id="testcaseTable"><thead><tr><th></th><th>Module</th><th>Test Case ID</th><th>Description</th><th>Status</th><th>Duration</th><th>Video</th></tr></thead><tbody>')
+
         counter = 1
         for test in details:
             module = test.get("module", "")
@@ -380,12 +386,13 @@ class SummaryReportGenerator:
             durationMs = test.get("durationMillis", 0)
             duration = f"{durationMs // 1000}s" if durationMs > 0 else "-"
             videoUrl = test.get("videoUrl") or ""
-            
+
             statusIcon = "✅ Passed" if status == "PASS" else ("❌ Failed" if status == "FAIL" else "⚠️ Skipped")
             statusClass = SummaryReportGenerator.get_status_class(status)
             videoLink = f'<a href="#" class="play-video-btn" data-video="{videoUrl}" onclick="playVideoHandler(event, this)">🎥 View</a>' if videoUrl else "-"
-            
-            html.append(f'<tr data-test-id="tc{counter}" data-expanded="false" onclick="toggleDetails(this)">')
+
+            html.append(
+                f'<tr data-test-id="tc{counter}" data-status="{status}" data-expanded="false" onclick="toggleDetails(this)">')
             html.append('<td class="expand-icon">+</td>')
             html.append(f'<td>{SummaryReportGenerator._escape_html(module)}</td>')
             html.append(f'<td>{SummaryReportGenerator._escape_html(testCaseId)}</td>')
@@ -394,16 +401,18 @@ class SummaryReportGenerator:
             html.append(f'<td>{duration}</td>')
             html.append(f'<td>{videoLink}</td>')
             html.append('</tr>')
-            
+
             html.append(f'<tr class="details-row" id="tc{counter}-details" style="display:none">')
-            html.append('<td colspan="7"><table class="step-table"><tr><th>Action</th><th>Expected Result</th><th>Actual Result</th><th>Status</th><th>Screenshot</th></tr>')
-            
+            html.append(
+                '<td colspan="7"><table class="step-table"><tr><th>Action</th><th>Expected Result</th><th>Actual Result</th><th>Status</th><th>Screenshot</th></tr>')
+
             steps = test.get("steps", [])
             for step in steps:
                 stepStatus = step.get("status", "")
                 icon = "✅" if stepStatus == "PASS" else ("❌" if stepStatus == "FAIL" else "⚠️")
-                screenshot_tag = f'<img class="screenshot" src="{step.get("screenshot")}"/>' if step.get("screenshot") else "-"
-                
+                screenshot_tag = f'<img class="screenshot" src="{step.get("screenshot")}"/>' if step.get(
+                    "screenshot") else "-"
+
                 html.append('<tr>')
                 html.append(f'<td>{SummaryReportGenerator._escape_html(step.get("action", ""))}</td>')
                 html.append(f'<td>{SummaryReportGenerator._escape_html(step.get("expected", ""))}</td>')
@@ -411,18 +420,18 @@ class SummaryReportGenerator:
                 html.append(f'<td>{icon}</td>')
                 html.append(f'<td>{screenshot_tag}</td>')
                 html.append('</tr>')
-                
+
             html.append('</table></td></tr>')
             counter += 1
-            
+
         html.append('</tbody></table></div>')
-        
+
         html.append("""
 <script>
 function toggleDetails(row) {
     const detailsRow = document.getElementById(row.getAttribute('data-test-id') + '-details');
     const expandIcon = row.querySelector('.expand-icon');
-    
+
     if (detailsRow.style.display === 'none') {
         detailsRow.style.display = 'table-row';
         row.setAttribute('data-expanded', 'true');
@@ -453,11 +462,10 @@ function playVideoHandler(event, element) {
 function applySearchAndFilter() {
   var searchText = document.getElementById('searchInput').value.toLowerCase().trim();
   var filterValue = document.getElementById('statusFilter').value;
-  var mainRows = document.querySelectorAll('#testcaseTable tbody tr:not(.details-row)');
+  var mainRows = document.querySelectorAll('#testcaseTable > tbody > tr:not(.details-row)');
   mainRows.forEach(function(row) {
     var rowText = row.textContent.toLowerCase();
-    var statusText = row.cells[4] ? row.cells[4].textContent.toLowerCase() : '';
-    var rowStatus = statusText.includes('pass') ? 'PASS' : statusText.includes('fail') ? 'FAIL' : statusText.includes('skip') ? 'SKIPPED' : '';
+    var rowStatus = row.getAttribute('data-status') || '';
     var matchesSearch = !searchText || rowText.includes(searchText);
     var matchesFilter = !filterValue || rowStatus === filterValue;
     var shouldShow = matchesSearch && matchesFilter;
@@ -506,32 +514,36 @@ document.addEventListener('DOMContentLoaded', function() {
     def build_custom_html(json_str):
         data = json.loads(json_str)
         summary = data.get("summary", {})
-        
+
         pass_c = summary.get("passed", 0)
         fail_c = summary.get("failed", 0)
         skip_c = summary.get("skipped", 0)
         total = summary.get("total", 0)
         duration = str(summary.get("durationMillis", 0))
         Total_duration = os.getenv("Total_duration")
-        
+
         detailedReportContent = SummaryReportGenerator.generate_detailed_html_from_json(json_str)
         executionDate = data.get("meta", {}).get("executionDate", "")
-        
-        companyLogoUrl = os.environ.get("CompanyLogo", "https://www.resulticks.com/images/logos/resulticks-logo-blue.svg")
-        productLogoUrl = os.environ.get("PRODUCTLOGO", "https://run19.resul.io/assets/resulticks-logo-white-391eec89.svg")
+
+        companyLogoUrl = os.environ.get("CompanyLogo",
+                                        "https://www.resulticks.com/images/logos/resulticks-logo-blue.svg")
+        productLogoUrl = os.environ.get("PRODUCTLOGO",
+                                        "https://run19.resul.io/assets/resulticks-logo-white-391eec89.svg")
 
         overallDurationFormatted = SummaryReportGenerator.format_millis_as_hms(duration)
         reportTitle = os.environ.get("reportTitle", "Automation Test Summary Report")
-        
+
         slaPercentage = ((pass_c / total) * 100) if total > 0 else 0
         slaFormatted = f"{int(slaPercentage)}%"
         passRate = f"{slaPercentage:.2f}%"
-        
+
         moduleDataJson = json.dumps(data.get("modules", []))
-        
-        escapedModuleData = moduleDataJson.replace("\\", "\\\\").replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+
+        escapedModuleData = moduleDataJson.replace("\\", "\\\\").replace('"', '\\"').replace('\n', '\\n').replace('\r',
+                                                                                                                  '\\r').replace(
+            '\t', '\\t')
         escapedDetailedReportContent = detailedReportContent.replace('`', '\\`')
-        
+
         html_template = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -703,12 +715,12 @@ function formatDuration(ms) {{
 function populateModuleTable() {{
     const tableBody = document.getElementById('moduleTableBody');
     if (!tableBody) return;
-    
+
     if (!moduleData || moduleData.length === 0) {{
         tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #666;">No module data available</td></tr>';
         return;
     }}
-    
+
     tableBody.innerHTML = moduleData.map(m => {{
         const successRate = m.total > 0 ? ((m.passed/m.total)*100).toFixed(0) : '0';
         const slaRate = 90;
@@ -744,7 +756,7 @@ document.addEventListener('click', function(e) {{
             modal.style.display = 'block';
         }}
     }}
-    
+
     if (e.target.id === 'closeModal' || e.target.classList.contains('modal')) {{
         const modal = document.getElementById('lightboxModal');
         const modalVideo = document.getElementById('lightboxVideo');
@@ -775,22 +787,37 @@ document.addEventListener('click', function(e) {{
             html_str = SummaryReportGenerator.build_custom_html(json_str)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             html_path = os.path.join("reports", f"report_{timestamp}.html")
-            daily_checklist_html_path = FrameworkConstants.get_daily_checklist_result_path() / f"daily_checklist_{timestamp}.html"
+            Env = ConfigReader.get_property("Environment")
+            daily_checklist_html_path = FrameworkConstants.get_daily_checklist_result_path() / f"daily_checklist_{Env}_{timestamp}.html"
+            deploy_checklist_html_path = FrameworkConstants.get_deploy_checklist_result_path() / f"deploy_checklist_{Env}_{timestamp}.html"
+            regression_checklist_html_path = FrameworkConstants.get_regression_checklist_result_path() / f"{ConfigReader.get_property("SuiteName")}_{Env}_{timestamp}.html"
+
             # Save the same HTML to both locations
             with open(html_path, 'w', encoding='utf-8') as f:
                 f.write(html_str)
             # Check if this is a daily suite run
+            subject_line_timestamp = datetime.now().strftime("%d %B %Y")
             if "daily" in ConfigReader.get_property("SuiteName").lower():
-                # Create directory for daily checklist if it doesn't exist
                 os.makedirs(FrameworkConstants.get_daily_checklist_result_path(), exist_ok=True)
-                # Save the same HTML to daily checklist location
                 with open(daily_checklist_html_path, 'w', encoding='utf-8') as f:
                     f.write(html_str)
                 print(f"\n[INFO] Generated Daily Checklist HTML at: {daily_checklist_html_path}")
-            print(f"\n[INFO] Generated Final JSON Report at: {json_path}")
-            print(f"[INFO] Generated Final HTML Report at: {html_path}")
-
-            EmailSender.send_email(daily_checklist_html_path,"Automation HTML Report")
+                subject_line = f"Daily Checklist Execution Completed in the {Env.upper()} Env on {subject_line_timestamp}."
+            elif "post" in ConfigReader.get_property("SuiteName").lower():
+                os.makedirs(FrameworkConstants.get_deploy_checklist_result_path(), exist_ok=True)
+                with open(deploy_checklist_html_path, 'w', encoding='utf-8') as f:
+                    f.write(html_str)
+                print(f"\n[INFO] Generated Deployment Checklist HTML at: {deploy_checklist_html_path}")
+                subject_line = f"Deployment Checklist Execution completed in the {Env.upper()} Env on {subject_line_timestamp}."
+            else:
+                os.makedirs(FrameworkConstants.get_regression_checklist_result_path(), exist_ok=True)
+                with open(regression_checklist_html_path, 'w', encoding='utf-8') as f:
+                    f.write(html_str)
+                print(f"\n[INFO] Generated Regression Checklist HTML at: {regression_checklist_html_path}")
+                subject_line = f"{ConfigReader.get_property("SuiteName")} Regression Execution Completed in the {Env.upper()} Env on {subject_line_timestamp}."
+            if "yes" in ConfigReader.get_property("isReportSend").lower():
+                ConfigReader.set_runtime_property("subject",subject_line)
+                EmailSender.send_email(daily_checklist_html_path, "Automation HTML Report")
 
             import webbrowser
             try:

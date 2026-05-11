@@ -12,6 +12,8 @@ class FrameworkConstants():
     )
     ONEDRIVE_BASE_PATH = Path.home() / "OneDrive - RESULTICKS" / "Automation" / "Resulticks"
     DAILY_CHECKLIST_RESULTS = ONEDRIVE_BASE_PATH / "DailyCheckListResults"
+    DEPLOY_CHECKLIST_RESULTS = ONEDRIVE_BASE_PATH / "DeploymentCheckListResults"
+    REG_CHECKLIST_RESULTS = ONEDRIVE_BASE_PATH / "RegressionResults"
     DYNAMIC_PATH = Path(os.getcwd()) / "loc_utils" / "data" / "DynamicFile"
     DOWNLOADED_FILE_PATH = Path(os.getcwd()) / "loc_utils" / "data" / "downloaded_file"
     UPLOAD_FILE_PATH = Path(os.getcwd()) / "loc_utils" / "data" / "UploadFiles"
@@ -61,6 +63,14 @@ class FrameworkConstants():
     @staticmethod
     def get_daily_checklist_result_path(self):
         return FrameworkConstants.DAILY_CHECKLIST_RESULTS
+
+    @staticmethod
+    def get_deploy_checklist_result_path():
+        return FrameworkConstants.DEPLOY_CHECKLIST_RESULTS
+
+    @staticmethod
+    def get_regression_checklist_result_path():
+        return FrameworkConstants.REG_CHECKLIST_RESULTS
 
     @staticmethod
     def get_team_data_file(user_name, environment):
