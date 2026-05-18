@@ -54,5 +54,12 @@ def pytest_sessionfinish(session, exitstatus):
         os.environ["Total_duration"] = formatted_total_time
         print(f"Duration   : {formatted_total_time}")
 
+        try:
+            from utils.test_management.jira_zephyr_client import update_zephyr_and_report_defects
+
+            update_zephyr_and_report_defects()
+        except Exception as exc:
+            print(f"[JIRA/ZEPHYR] Integration skipped or failed: {exc}")
+
         # Optional: pass to your report generator
         SummaryReportGenerator.generate_final_report()

@@ -25,6 +25,7 @@ def browser_instance(playwright,request):
     os.makedirs("videos", exist_ok=True)
 
     browser_name = ConfigReader.get_property("Browser").lower()
+    environment = ConfigReader.get_property("Environment").upper()
 
     service_url = os.getenv("PLAYWRIGHT_SERVICE_URL", "").strip()
     service_access_token = os.getenv("PLAYWRIGHT_SERVICE_ACCESS_TOKEN", "").strip()

@@ -81,9 +81,46 @@ class DetailedTestReporter:
             except Exception as e:
                 print(f"⚠️ Failed to load worker state {file}: {e}")
 
+        cls._dedupe_test_executions()
+
+    @classmethod
+    def _latest_execution(cls, test_case_id):
+        return next((e for e in reversed(cls.test_executions) if e.test_case_id == test_case_id), None)
+
+    @staticmethod
+    def _build_test_execution(module, scenario_id, test_case_id, short_description):
+        execution = TestExecution()
+        execution.module = module
+        execution.scenario_id = scenario_id
+        execution.test_case_id = test_case_id
+        execution.short_description = short_description
+        execution.start_time = datetime.now()
+        execution.status = ExecutionStatus.PASS
+        execution.steps = []
+        return execution
+
+    @classmethod
+    def _dedupe_test_executions(cls):
+        latest_by_test_case = {}
+        for execution in cls.test_executions:
+            if execution.test_case_id:
+                latest_by_test_case[execution.test_case_id] = execution
+
+        deduped = []
+        emitted = set()
+        for execution in cls.test_executions:
+            key = execution.test_case_id
+            if not key:
+                deduped.append(execution)
+            elif latest_by_test_case[key] is execution and key not in emitted:
+                deduped.append(execution)
+                emitted.add(key)
+
+        cls.test_executions = deduped
+
     @classmethod
     def attach_video(cls, test_case_id, video_url):
-        execution = next((e for e in cls.test_executions if e.test_case_id == test_case_id), None)
+        execution = cls._latest_execution(test_case_id)
         if not execution and cls.test_executions:
             execution = cls.test_executions[-1]
 
@@ -95,20 +132,24 @@ class DetailedTestReporter:
         return cls.test_executions
 
     @classmethod
-    def add_test_execution(cls, module, scenario_id, test_case_id, short_description):
+    def add_test_execution(cls, module, scenario_id, test_case_id, short_description, replace_existing=False):
+        existing_index = next(
+            (index for index in range(len(cls.test_executions) - 1, -1, -1)
+             if cls.test_executions[index].test_case_id == test_case_id),
+            None,
+        )
+
+        if existing_index is not None and replace_existing:
+            execution = cls._build_test_execution(module, scenario_id, test_case_id, short_description)
+            cls.test_executions[existing_index] = execution
+            return execution
+
         # Prevent duplicates
         if any(e.test_case_id == test_case_id for e in cls.test_executions):
             print(f"⚠️ Duplicate Test Case ID skipped: {test_case_id}")
-            return None
+            return cls.test_executions[existing_index]
 
-        execution = TestExecution()
-        execution.module = module
-        execution.scenario_id = scenario_id
-        execution.test_case_id = test_case_id
-        execution.short_description = short_description
-        execution.start_time = datetime.now()
-        execution.status = ExecutionStatus.PASS
-        execution.steps = []
+        execution = cls._build_test_execution(module, scenario_id, test_case_id, short_description)
 
         cls.test_executions.append(execution)
         return execution
@@ -123,7 +164,7 @@ class DetailedTestReporter:
 
         step_status = StepStatus.PASS if status else StepStatus.FAIL
 
-        execution = next((e for e in cls.test_executions if e.test_case_id == test_case_id), None)
+        execution = cls._latest_execution(test_case_id)
 
         if not execution:
             print(f"⚠️ Cannot find active test execution for {test_case_id}.")
@@ -156,7 +197,7 @@ class DetailedTestReporter:
 
     @classmethod
     def add_step(cls, test_case_id, action, expected_result, actual_result, status, page=None):
-        execution = next((e for e in cls.test_executions if e.test_case_id == test_case_id), None)
+        execution = cls._latest_execution(test_case_id)
 
         if not execution:
             execution = TestExecution()
