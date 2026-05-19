@@ -51,8 +51,8 @@ class JiraZephyrClient:
         self.zephyr_api_key = _setting("ZEPHYR_API_KEY", "")
         self.project_key = _setting("PROJECT_KEY", "")
         self.test_cycle_key = _setting("TEST_CYCLE_ID", _setting("TEST_CYCLE_KEY", ""))
-        self.report_bug = _setting("REPORT_BUG", _setting("reportdefect", "No"))
-        self.update_zephyr = _setting("UPDATE_ZEPHYR_EXECUTION", "No")
+        self.report_bug = _enabled("REPORT_BUG", _setting("reportdefect", "No"))
+        self.update_zephyr = _enabled("UPDATE_ZEPHYR_EXECUTION", "No")
         self.bug_priority = _setting("BUG_PRIORITY", "High")
         self.bug_component = _setting("BUG_COMPONENT", "Automation Testing")
         self.bug_assignee = _setting("BUG_ASSIGNEE", "")
@@ -60,9 +60,11 @@ class JiraZephyrClient:
         self.report_version_field = _setting("REPORT_VERSION_FIELD", "customfield_10375")
         self.report_version = _setting("ReportVersion", "v1.0")
         self.check_duplicates = _enabled("CHECK_DUPLICATES", "true")
+        self.report_script_failures = _enabled("REPORT_SCRIPT_FAILURE_BUGS", "No")
         self.timeout = int(_setting("CONNECTION_TIMEOUT_MS", _setting("READ_TIMEOUT_MS", "60")) or 60)
 
     def update_from_reporter(self):
+        print(f"[JIRA/ZEPHYR] Flags: UPDATE_ZEPHYR_EXECUTION={self.update_zephyr}, REPORT_BUG={self.report_bug}")
         results = [
             TestResult(execution.test_case_id, execution.status, execution)
             for execution in DetailedTestReporter.get_test_executions()
@@ -121,6 +123,10 @@ class JiraZephyrClient:
         self._require(self.project_key, "PROJECT_KEY")
 
         failure_reason = self._failure_reason(result.execution)
+        if self._is_script_failure(failure_reason) and not self.report_script_failures:
+            print(f"[JIRA] Skipping bug for script/framework failure in {result.test_case_key}: {failure_reason}")
+            return None
+
         if self.check_duplicates:
             existing = self._find_duplicate_bug(result.test_case_key, failure_reason)
             if existing:
@@ -373,6 +379,34 @@ class JiraZephyrClient:
             if step.status != StepStatus.PASS and step.actual_result:
                 return str(step.actual_result)
         return "Test execution failed"
+
+    @staticmethod
+    def _is_script_failure(failure_reason: str) -> bool:
+        text = str(failure_reason or "").lower()
+        script_failure_patterns = [
+            "locator.",
+            "locator.wait_for",
+            "timeout ",
+            "timeouterror",
+            "playwright",
+            "target closed",
+            "browser has been closed",
+            "context has been closed",
+            "page has been closed",
+            "strict mode violation",
+            "element is not attached",
+            "net::",
+            "connection refused",
+            "nameerror",
+            "attributeerror",
+            "typeerror",
+            "keyerror",
+            "indexerror",
+            "syntaxerror",
+            "importerror",
+            "modulenotfounderror",
+        ]
+        return any(pattern in text for pattern in script_failure_patterns)
 
     @staticmethod
     def _heading(text: str, level: int) -> dict:

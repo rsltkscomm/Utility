@@ -203,6 +203,7 @@ class CSVGenerator:
                 base_audience_list.append(row_map)
                 csv_audience_count += 1
 
+        CSVGenerator.csv_audience_count = csv_audience_count
         print(f"✅ CSV created at: {csv_file}")
         return str(csv_file)
 

@@ -1091,11 +1091,20 @@ class EmailSender:
         all_bugs_section = cls.get_all_bugs_html()
 
         if cls.ReportName and "daily" in cls.ReportName.lower():
-            report_name = "Daily Checklist"
+            if "resul" in ConfigReader.get_property("Project").lower():
+                report_name = "Resul - Daily Checklist"
+            elif "star" in ConfigReader.get_property("Project").lower():
+                report_name = "Marketing Star - Daily Checklist"
         elif cls.ReportName and "post" in cls.ReportName.lower():
-            report_name = "Deployment Checklist"
+            if "resul" in ConfigReader.get_property("Project").lower():
+                report_name = "Resul - Deployment Checklist"
+            elif "star" in ConfigReader.get_property("Project").lower():
+                report_name = "Marketing Star - Deployment Checklist"
         else:
-            report_name = "Regression"
+            if "resul" in ConfigReader.get_property("Project").lower():
+                report_name = "Resul - Regression"
+            elif "star" in ConfigReader.get_property("Project").lower():
+                report_name = "Marketing Star - Regression"
 
         Environment = ConfigReader.get_property("Environment")
         Project = ConfigReader.get_property("Project")
