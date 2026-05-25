@@ -851,9 +851,9 @@ class PlaywrightActions(WebActions):
 
     def sendValue(self, locator, value: str) -> bool:
         try:
-            self.resolveLocator(locator).fill(value)
+            self.page.locator(locator).type(value)
             return True
-        except Exception:
+        except Exception as e:
             return False
 
     def child_window_close_index(self, index: int) -> bool:
