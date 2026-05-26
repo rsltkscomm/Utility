@@ -14,10 +14,6 @@ from utils.constants.framework_constants import FrameworkConstants
 project = os.getenv("PROJECT_NAME") or "Resul"
 FrameworkConstants.PROJECT_NAME = project
 
-import conftest_healing
-
-conftest_healing.install_healing_overlay()
-
 from utils.baseclass.HealingPlaywrightActions import HealingPlaywrightActions
 from utils.reporting.custom_reporter import DetailedTestReporter
 

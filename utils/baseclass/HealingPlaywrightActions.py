@@ -8,9 +8,9 @@ from utils.baseclass.PW_BaseClass import PlaywrightActions
 from utils.constants.framework_constants import FrameworkConstants
 from utils.ini_file_reader.config_reader import ConfigReader
 
-from utils.services.healing_config import ai_healing_enabled
-
 from utils.services.locator_store import LocatorStore
+from utils.services.locator_healer import LocatorHealer
+from utils.services.healing_config import healing_enabled,ai_healing_enabled
 
 
 class HealingPlaywrightActions(PlaywrightActions):
