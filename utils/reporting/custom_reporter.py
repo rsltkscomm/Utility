@@ -835,7 +835,10 @@ document.addEventListener('click', function(e) {{
             daily_checklist_html_path = FrameworkConstants.get_daily_checklist_result_path() / f"daily_checklist_{Env}_{timestamp}.html"
             deploy_checklist_html_path = FrameworkConstants.get_deploy_checklist_result_path() / f"deploy_checklist_{Env}_{timestamp}.html"
             regression_checklist_html_path = FrameworkConstants.get_regression_checklist_result_path() / f"{ConfigReader.get_property("SuiteName")}_{Env}_{timestamp}.html"
-
+            if "resul" in ConfigReader.get_property("Project").lower():
+                report_name = "RESUL"
+            elif "star" in ConfigReader.get_property("Project").lower():
+                report_name = "Marketing Star"
             # Save the same HTML to both locations
             with open(html_path, 'w', encoding='utf-8') as f:
                 f.write(html_str)
@@ -846,19 +849,19 @@ document.addEventListener('click', function(e) {{
                 with open(daily_checklist_html_path, 'w', encoding='utf-8') as f:
                     f.write(html_str)
                 print(f"\n[INFO] Generated Daily Checklist HTML at: {daily_checklist_html_path}")
-                subject_line = f"Daily Checklist Execution Completed in the {Env.upper()} Env on {subject_line_timestamp}."
+                subject_line = f"{report_name} - Daily Checklist Execution Completed in the {Env.upper()} Env on {subject_line_timestamp}."
             elif "post" in ConfigReader.get_property("SuiteName").lower():
                 os.makedirs(FrameworkConstants.get_deploy_checklist_result_path(), exist_ok=True)
                 with open(deploy_checklist_html_path, 'w', encoding='utf-8') as f:
                     f.write(html_str)
                 print(f"\n[INFO] Generated Deployment Checklist HTML at: {deploy_checklist_html_path}")
-                subject_line = f"Deployment Checklist Execution completed in the {Env.upper()} Env on {subject_line_timestamp}."
+                subject_line = f"{report_name} - Deployment Checklist Execution completed in the {Env.upper()} Env on {subject_line_timestamp}."
             else:
                 os.makedirs(FrameworkConstants.get_regression_checklist_result_path(), exist_ok=True)
                 with open(regression_checklist_html_path, 'w', encoding='utf-8') as f:
                     f.write(html_str)
                 print(f"\n[INFO] Generated Regression Checklist HTML at: {regression_checklist_html_path}")
-                subject_line = f"{ConfigReader.get_property("SuiteName")} Regression Execution Completed in the {Env.upper()} Env on {subject_line_timestamp}."
+                subject_line = f"{report_name} - {ConfigReader.get_property("SuiteName")} Regression Execution Completed in the {Env.upper()} Env on {subject_line_timestamp}."
             if "yes" in ConfigReader.get_property("isReportSend").lower():
                 ConfigReader.set_runtime_property("subject",subject_line)
                 EmailSender.send_email(daily_checklist_html_path, "Automation HTML Report")
