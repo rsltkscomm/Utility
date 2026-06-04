@@ -342,7 +342,7 @@ class SummaryReportGenerator:
                 "scenarioId": exec_obj.scenario_id if exec_obj.scenario_id else "",
                 "testCaseId": exec_obj.test_case_id if exec_obj.test_case_id else "",
                 "description": (
-                    exec_obj.short_description.replace("_", " ").strip()
+                    exec_obj.short_description.replace("_", " ").strip().capitalize()
                     if exec_obj.short_description else ""
                 ),
                 "status": exec_obj.status if exec_obj.status else "SKIPPED",
