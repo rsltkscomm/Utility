@@ -174,10 +174,6 @@ class DetailedTestReporter:
             print(f"⚠️ Cannot find active test execution for {test_case_id}.")
             return
 
-        # check duplicate
-        if any(s.action == action and s.expected_result == expected_result for s in execution.steps):
-            return
-
         step = TestStep()
         step.step_no = len(execution.steps) + 1
         step.action = action
@@ -210,10 +206,6 @@ class DetailedTestReporter:
             execution.status = ExecutionStatus.PASS
             execution.steps = []
             cls.test_executions.append(execution)
-
-        # check duplicate
-        if any(s.action == action and s.expected_result == expected_result for s in execution.steps):
-            return
 
         step = TestStep()
         step.step_no = len(execution.steps) + 1
@@ -472,7 +464,7 @@ class SummaryReportGenerator:
   <col style="width:9%">
   <col style="width:8%">
   <col style="width:10%">
-  <col style="width:22%">
+  <col style="width:26%">
 </colgroup>
 <thead><tr>
   <th class="th-expand"></th>
@@ -482,7 +474,7 @@ class SummaryReportGenerator:
   <th style="text-align:center;">Status</th>
   <th style="text-align:center;">Duration</th>
   <th style="text-align:center;">Video</th>
-  <th class="th-last7">Last 7</th>
+  <th class="th-last7">Last 7 Execution</th>
 </tr></thead><tbody>''')
 
         # Precompute the labels for the last 7 days (oldest -> newest, same order as history list)
@@ -746,10 +738,12 @@ document.addEventListener('DOMContentLoaded', function() {
 <style>
 /* ===== Last 7 inline circles (replaces the old History popup) ===== */
 .last7-row {{
-    display: inline-flex;
+    display: flex;
     gap: 6px;
     align-items: center;
+    justify-content: center;
     white-space: nowrap;
+    width: 100%;
 }}
 .mini-circle {{
     width: 28px;
@@ -781,13 +775,16 @@ document.addEventListener('DOMContentLoaded', function() {
     text-align: center;
     overflow: visible !important;
     padding: 8px 4px !important;
+    display: table-cell;
+    vertical-align: middle;
 }}
 .last7-row {{
-    display: inline-flex;
+    display: flex;
     flex-wrap: nowrap;
     gap: 4px;
     align-items: center;
     justify-content: center;
+    width: 100%;
 }}
 
 /* Floating tooltip lives in <body> so it can't be clipped by .table-container overflow */

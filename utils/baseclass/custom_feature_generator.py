@@ -6,14 +6,14 @@ from utils.constants.framework_constants import FrameworkConstants
 
 class CustomFeatureGenerator:
     def __init__(self, sheet_name: str):
-        self.project_root = os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        )
+        # FrameworkConstants.PROJECT_DIR -> <cwd>/features, i.e. the actual project's
+        # features package. Previously project_root was derived from __file__, which
+        # since this module lives in .venv/Lib/site-packages caused custom feature
+        # files to be written inside the virtualenv.
+        self.features_root = FrameworkConstants.PROJECT_DIR
         self.excel_path = FrameworkConstants.get_script_details_file()
         self.sheet_name = sheet_name
-        self.custom_feature_dir = os.path.join(
-            self.project_root, "features", "customfeature"
-        )
+        self.custom_feature_dir = os.path.join(self.features_root, "customfeature")
 
     def parse_steps(self, steps_text: str) -> list[str]:
         if not steps_text or str(steps_text).strip() == "":
@@ -52,9 +52,9 @@ class CustomFeatureGenerator:
         feature_file_path = feature_file_path.replace("\\", "/").strip()
 
         if feature_file_path.startswith("features/"):
-            return os.path.join(self.project_root, feature_file_path)
+            feature_file_path = feature_file_path[len("features/"):]
 
-        return os.path.join(self.project_root, "features", feature_file_path)
+        return os.path.join(self.features_root, feature_file_path)
 
     def get_custom_feature_path(self, feature_file_path: str) -> str:
         os.makedirs(self.custom_feature_dir, exist_ok=True)
