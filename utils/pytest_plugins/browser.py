@@ -63,6 +63,7 @@ def browser_instance(playwright,request):
     context = browser.new_context(
         record_video_dir=video_dir,
         record_video_size={"width": 1280, "height": 720},
+        ignore_https_errors=True
     )
 
     page = context.new_page()
