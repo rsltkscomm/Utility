@@ -832,6 +832,8 @@ body {{ font-family: 'Segoe UI', sans-serif; background:#f0f4fa; margin:0; color
 .table-container table {{ width:100%; border-collapse:collapse; }}
 .table-container th, .table-container td {{ padding:8px; border-bottom:1px solid #eee; text-align:left; }}
 .table-container th {{ background:#002b6b; color:white; }}
+.table-container tbody tr {{ transition: background 0.15s; cursor: pointer; }}
+.table-container tbody tr:hover {{ background: #eaf2ff !important; box-shadow: inset 3px 0 0 #1a6fd4; }}
 .footer {{ text-align:center; font-size:0.8em; padding:10px; background:#f1f1f1; margin-top:20px; }}
 .detailed-section {{ display: none; }}
 
@@ -982,6 +984,8 @@ body {{ font-family: 'Segoe UI', sans-serif; background:#f0f4fa; margin:0; color
 .step-table {{ width:95%; margin:10px auto; border-collapse:collapse; font-size:0.85em; table-layout:fixed; border-radius:8px; overflow:hidden; }}
 .step-table th, .step-table td {{ border:1px solid #e2e8f0; padding:9px 10px; text-align:left; word-wrap:break-word; overflow-wrap:break-word; }}
 .step-table th {{ background: linear-gradient(90deg,#1e293b,#334155); color:#fff; font-size:0.82em; text-transform:uppercase; letter-spacing:0.5px; }}
+.step-table tbody tr {{ transition: background 0.15s; }}
+.step-table tbody tr:hover {{ background: #eaf2ff !important; }}
 .step-table td:nth-child(1), .step-table th:nth-child(1) {{ width:30%; }}
 .step-table td:nth-child(2), .step-table th:nth-child(2) {{ width:25%; }}
 .step-table td:nth-child(3), .step-table th:nth-child(3) {{ width:25%; }}
@@ -1007,8 +1011,7 @@ video.modal-content {{ width:80%; background:black; }}
 }}
 .chart-container canvas {{ max-width:300px !important; max-height:300px !important; }}
 .detailed-report-link {{ text-align:right; padding:10px; display:block; }}
-.detailed-report-link a {{ color:#0052cc; text-decoration:none; font-weight:600; cursor:pointer; padding-right:47px; }}
-.detailed-report-link a:hover {{ text-decoration:underline; }}
+.detailed-report-link a {{ text-decoration:none; }}
 .back-btn {{
     background: linear-gradient(90deg, #0e4494 0%, #1a6fd4 100%);
     color: #fff;
@@ -1065,7 +1068,7 @@ video.modal-content {{ width:80%; background:black; }}
         <div>🎯 Pass Rate: {passRate}</div>
     </div>
     <div class="detailed-report-link">
-        <a onclick="showDetailedReport()">📑 Detailed Report</a>
+        <a class="back-btn" onclick="showDetailedReport()"><span class="back-btn-icon">&#8594;</span> Detailed Report</a>
     </div>
     <div class="main">
         <div class="chart-container">
@@ -1102,10 +1105,36 @@ video.modal-content {{ width:80%; background:black; }}
 
 <script>
 /* ===== Navigation ===== */
-function showDetailedReport() {{
+function showDetailedReport(moduleFilter) {{
     document.getElementById("summary-section").style.display = "none";
     document.getElementById("detailed-section").style.display = "block";
     window.scrollTo(0, 0);
+
+    // Apply module filter if provided, otherwise show all rows
+    var mainRows = document.querySelectorAll('#testcaseTable > tbody > tr:not(.details-row)');
+    mainRows.forEach(function(row) {{
+        var rowModule = (row.getAttribute('data-module') || '').toUpperCase().trim();
+        var filterModule = moduleFilter ? moduleFilter.toUpperCase().trim() : '';
+        var shouldShow = !filterModule || rowModule === filterModule;
+        var testId = row.getAttribute('data-test-id');
+        var detailsRow = document.getElementById(testId + '-details');
+        if (shouldShow) {{
+            row.style.display = '';
+            if (detailsRow) {{
+                var expanded = row.getAttribute('data-expanded') === 'true';
+                detailsRow.style.display = expanded ? 'table-row' : 'none';
+            }}
+        }} else {{
+            row.style.display = 'none';
+            if (detailsRow) detailsRow.style.display = 'none';
+        }}
+    }});
+
+    // Reset the search/filter controls to reflect no active text/status filter
+    var searchInput = document.getElementById('searchInput');
+    var statusFilter = document.getElementById('statusFilter');
+    if (searchInput) searchInput.value = '';
+    if (statusFilter) statusFilter.value = '';
 }}
 function showSummaryReport() {{
     document.getElementById("detailed-section").style.display = "none";
@@ -1160,8 +1189,9 @@ function populateModuleTable() {{
     tableBody.innerHTML = moduleData.map(function(m) {{
         var successRate = m.total > 0 ? ((m.passed / m.total) * 100).toFixed(0) : '0';
         var slaRate = 90;
-        return '<tr onclick="showDetailedReport()" style="cursor:pointer;">'
-            + '<td>' + (m.module || 'Unknown Module') + '</td>'
+        var modName = (m.module || 'Unknown Module');
+        return '<tr class="module-summary-row" data-filter-module="' + modName + '" style="cursor:pointer;">'
+            + '<td>' + modName + '</td>'
             + '<td>' + (m.total || 0) + '</td>'
             + '<td>' + (m.passed || 0) + '</td>'
             + '<td>' + (m.failed || 0) + '</td>'
@@ -1171,6 +1201,13 @@ function populateModuleTable() {{
             + '<td class="' + (successRate >= slaRate ? 'sla-pass' : 'sla-fail') + '">' + successRate + '%</td>'
             + '</tr>';
     }}).join('');
+
+    // Attach click handlers after rows are in the DOM (avoids all inline-JS quoting issues)
+    document.querySelectorAll('.module-summary-row').forEach(function(row) {{
+        row.addEventListener('click', function() {{
+            showDetailedReport(this.getAttribute('data-filter-module'));
+        }});
+    }});
 }}
 
 /* ===== Floating tooltip for Last 7 circles =====
