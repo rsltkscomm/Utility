@@ -1300,9 +1300,6 @@ document.addEventListener('click', function(e) {{
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             html_path = os.path.join("reports", f"report_{timestamp}.html")
             Env = ConfigReader.get_property("Environment")
-            daily_checklist_html_path = FrameworkConstants.get_daily_checklist_result_path() / f"daily_checklist_{Env}_{timestamp}.html"
-            deploy_checklist_html_path = FrameworkConstants.get_deploy_checklist_result_path() / f"deploy_checklist_{Env}_{timestamp}.html"
-            regression_checklist_html_path = FrameworkConstants.get_regression_checklist_result_path() / f"{ConfigReader.get_property('SuiteName')}_{Env}_{timestamp}.html"
 
             if "resul" in ConfigReader.get_property("Project").lower():
                 report_name = "RESUL"

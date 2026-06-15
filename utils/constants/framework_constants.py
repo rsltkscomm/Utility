@@ -64,7 +64,7 @@ class FrameworkConstants():
         return os.path.join(FrameworkConstants.UPLOAD_FILE_PATH, file_name)
 
     @staticmethod
-    def get_daily_checklist_result_path(self):
+    def get_daily_checklist_result_path():
         return FrameworkConstants.DAILY_CHECKLIST_RESULTS
 
     @staticmethod
@@ -76,7 +76,7 @@ class FrameworkConstants():
         return FrameworkConstants.REG_CHECKLIST_RESULTS
 
     @staticmethod
-    def get_MK_daily_checklist_result_path(self):
+    def get_MK_daily_checklist_result_path():
         return FrameworkConstants.MARKETING_STAR_DAILY_PATH
 
     @staticmethod
