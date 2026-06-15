@@ -19,6 +19,9 @@ class FrameworkConstants():
     UPLOAD_FILE_PATH = Path(os.getcwd()) / "loc_utils" / "data" / "UploadFiles"
     PROJECT_NAME = os.getenv("PROJECT_NAME")
     PROJECT_DIR = os.path.join(os.getcwd(), "features")
+    MARKETING_STAR_DAILY_PATH = ONEDRIVE_BASE_PATH / "Marketing Star Daily Checklist"
+    MARKETING_STAR_DEPLOY_PATH = ONEDRIVE_BASE_PATH / "MarketingStar DeploymentChecklist"
+    MARKETING_STAR_REGRESSION_PATH = ONEDRIVE_BASE_PATH / "Marketing Star Regression"
 
     @staticmethod
     def get_download_file_path():
@@ -61,7 +64,7 @@ class FrameworkConstants():
         return os.path.join(FrameworkConstants.UPLOAD_FILE_PATH, file_name)
 
     @staticmethod
-    def get_daily_checklist_result_path(self):
+    def get_daily_checklist_result_path():
         return FrameworkConstants.DAILY_CHECKLIST_RESULTS
 
     @staticmethod
@@ -71,6 +74,18 @@ class FrameworkConstants():
     @staticmethod
     def get_regression_checklist_result_path():
         return FrameworkConstants.REG_CHECKLIST_RESULTS
+
+    @staticmethod
+    def get_MK_daily_checklist_result_path():
+        return FrameworkConstants.MARKETING_STAR_DAILY_PATH
+
+    @staticmethod
+    def get_MK_deploy_checklist_result_path():
+        return FrameworkConstants.MARKETING_STAR_DEPLOY_PATH
+
+    @staticmethod
+    def get_MK_regression_checklist_result_path():
+        return FrameworkConstants.MARKETING_STAR_REGRESSION_PATH
 
     @staticmethod
     def get_team_data_file(user_name, environment):

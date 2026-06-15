@@ -1300,43 +1300,94 @@ document.addEventListener('click', function(e) {{
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             html_path = os.path.join("reports", f"report_{timestamp}.html")
             Env = ConfigReader.get_property("Environment")
-            daily_checklist_html_path = FrameworkConstants.get_daily_checklist_result_path() / f"daily_checklist_{Env}_{timestamp}.html"
-            deploy_checklist_html_path = FrameworkConstants.get_deploy_checklist_result_path() / f"deploy_checklist_{Env}_{timestamp}.html"
-            regression_checklist_html_path = FrameworkConstants.get_regression_checklist_result_path() / f"{ConfigReader.get_property('SuiteName')}_{Env}_{timestamp}.html"
 
             if "resul" in ConfigReader.get_property("Project").lower():
                 report_name = "RESUL"
+                daily_checklist_html_path = FrameworkConstants.get_daily_checklist_result_path() / f"daily_checklist_{Env}_{timestamp}.html"
+                deploy_checklist_html_path = FrameworkConstants.get_deploy_checklist_result_path() / f"deploy_checklist_{Env}_{timestamp}.html"
+                regression_checklist_html_path = FrameworkConstants.get_regression_checklist_result_path() / f"{ConfigReader.get_property('SuiteName')}_{Env}_{timestamp}.html"
+
             elif "star" in ConfigReader.get_property("Project").lower():
                 report_name = "Marketing Star"
+                daily_checklist_html_path = FrameworkConstants.get_MK_daily_checklist_result_path()/ f"daily_checklist_{Env}_{timestamp}.html"
+                deploy_checklist_html_path = FrameworkConstants.get_MK_deploy_checklist_result_path() / f"deploy_checklist_{Env}_{timestamp}.html"
+                regression_checklist_html_path = FrameworkConstants.get_MK_regression_checklist_result_path() / f"{ConfigReader.get_property('SuiteName')}_{Env}_{timestamp}.html"
 
             with open(html_path, 'w', encoding='utf-8') as f:
                 f.write(html_str)
 
             subject_line_timestamp = datetime.now().strftime("%d %B %Y")
             suite_name = ConfigReader.get_property("SuiteName").lower()
+            if "resul" in ConfigReader.get_property("Project").lower():
 
-            if "daily" in ConfigReader.get_property("SuiteName").lower():
-                os.makedirs(FrameworkConstants.get_daily_checklist_result_path(), exist_ok=True)
-                with open(daily_checklist_html_path, 'w', encoding='utf-8') as f:
-                    f.write(html_str)
-                print(f"\n[INFO] Generated Daily Checklist HTML at: {daily_checklist_html_path}")
-                ConfigReader.set_runtime_property("execution_report_path", daily_checklist_html_path)
-                subject_line = f"{report_name} - Daily Checklist Execution Completed in the {Env.upper()} Env on {subject_line_timestamp}."
-            elif "post" in ConfigReader.get_property("SuiteName").lower():
-                os.makedirs(FrameworkConstants.get_deploy_checklist_result_path(), exist_ok=True)
-                with open(deploy_checklist_html_path, 'w', encoding='utf-8') as f:
-                    f.write(html_str)
-                print(f"\n[INFO] Generated Deployment Checklist HTML at: {deploy_checklist_html_path}")
-                subject_line = f"{report_name} - Deployment Checklist Execution completed in the {Env.upper()} Env on {subject_line_timestamp}."
-                ConfigReader.set_runtime_property("execution_report_path", deploy_checklist_html_path)
-            else:
-                os.makedirs(FrameworkConstants.get_regression_checklist_result_path(), exist_ok=True)
-                with open(regression_checklist_html_path, 'w', encoding='utf-8') as f:
-                    f.write(html_str)
-                print(f"\n[INFO] Generated Regression Checklist HTML at: {regression_checklist_html_path}")
-                subject_line = f"{report_name} - {ConfigReader.get_property("SuiteName")} Regression Execution Completed in the {Env.upper()} Env on {subject_line_timestamp}."
-                ConfigReader.set_runtime_property("execution_report_path", regression_checklist_html_path)
+                if "daily" in ConfigReader.get_property("SuiteName").lower():
+                    os.makedirs(FrameworkConstants.get_daily_checklist_result_path(), exist_ok=True)
 
+                    with open(daily_checklist_html_path, 'w', encoding='utf-8') as f:
+                        f.write(html_str)
+
+                    print(f"\n[INFO] Generated Daily Checklist HTML at: {daily_checklist_html_path}")
+                    ConfigReader.set_runtime_property("execution_report_path", daily_checklist_html_path)
+
+                    subject_line = f"{report_name} - Daily Checklist Execution Completed in the {Env.upper()} Env on {subject_line_timestamp}."
+
+                elif "post" in ConfigReader.get_property("SuiteName").lower():
+                    os.makedirs(FrameworkConstants.get_deploy_checklist_result_path(), exist_ok=True)
+
+                    with open(deploy_checklist_html_path, 'w', encoding='utf-8') as f:
+                        f.write(html_str)
+
+                    print(f"\n[INFO] Generated Deployment Checklist HTML at: {deploy_checklist_html_path}")
+                    ConfigReader.set_runtime_property("execution_report_path", deploy_checklist_html_path)
+
+                    subject_line = f"{report_name} - Deployment Checklist Execution completed in the {Env.upper()} Env on {subject_line_timestamp}."
+
+                else:
+                    os.makedirs(FrameworkConstants.get_regression_checklist_result_path(), exist_ok=True)
+
+                    with open(regression_checklist_html_path, 'w', encoding='utf-8') as f:
+                        f.write(html_str)
+
+                    print(f"\n[INFO] Generated Regression Checklist HTML at: {regression_checklist_html_path}")
+                    ConfigReader.set_runtime_property("execution_report_path", regression_checklist_html_path)
+
+                    subject_line = f'{report_name} - {ConfigReader.get_property("SuiteName")} Regression Execution Completed in the {Env.upper()} Env on {subject_line_timestamp}.'
+
+
+            elif "star" in ConfigReader.get_property("Project").lower():
+
+                if "daily" in ConfigReader.get_property("SuiteName").lower():
+                    os.makedirs(FrameworkConstants.get_MK_daily_checklist_result_path(), exist_ok=True)
+
+                    with open(daily_checklist_html_path, 'w', encoding='utf-8') as f:
+                        f.write(html_str)
+
+                    print(f"\n[INFO] Generated Daily Checklist HTML at: {daily_checklist_html_path}")
+                    ConfigReader.set_runtime_property("execution_report_path", daily_checklist_html_path)
+
+                    subject_line = f"{report_name} - Daily Checklist Execution Completed in the {Env.upper()} Env on {subject_line_timestamp}."
+
+                elif "post" in ConfigReader.get_property("SuiteName").lower():
+                    os.makedirs(FrameworkConstants.get_MK_deploy_checklist_result_path(), exist_ok=True)
+
+                    with open(deploy_checklist_html_path, 'w', encoding='utf-8') as f:
+                        f.write(html_str)
+
+                    print(f"\n[INFO] Generated Deployment Checklist HTML at: {deploy_checklist_html_path}")
+                    ConfigReader.set_runtime_property("execution_report_path", deploy_checklist_html_path)
+
+                    subject_line = f"{report_name} - Deployment Checklist Execution completed in the {Env.upper()} Env on {subject_line_timestamp}."
+
+                else:
+                    os.makedirs(FrameworkConstants.get_MK_regression_checklist_result_path(), exist_ok=True)
+
+                    with open(regression_checklist_html_path, 'w', encoding='utf-8') as f:
+                        f.write(html_str)
+
+                    print(f"\n[INFO] Generated Regression Checklist HTML at: {regression_checklist_html_path}")
+                    ConfigReader.set_runtime_property("execution_report_path", regression_checklist_html_path)
+
+                    subject_line = f'{report_name} - {ConfigReader.get_property("SuiteName")} Regression Execution Completed in the {Env.upper()} Env on {subject_line_timestamp}.'
             if "yes" in ConfigReader.get_property("isReportSend").lower():
                 ConfigReader.set_runtime_property("subject", subject_line)
                 if "daily" in suite_name:

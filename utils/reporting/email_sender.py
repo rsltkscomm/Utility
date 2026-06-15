@@ -1113,12 +1113,22 @@ class EmailSender:
         # Final fallback to Azure path if GitHub publishing failed
         if not FilePath:
             suite = ConfigReader.get_property("SuiteName").lower()
-            if "daily" in suite:
-                FilePath = "https://azureresulticks-my.sharepoint.com/:f:/g/personal/qaautomation_resulticks_com/IgD9QKIO4zuUQLf9Fq8ecCT5AbMtLEOO069oUwH5tJIh1Gs?e=8G1xau"
-            elif "post" in suite:
-                FilePath = "https://azureresulticks-my.sharepoint.com/:f:/g/personal/qaautomation_resulticks_com/IgBU4Mk9VkvZQ774UTB5Zy-AAVr5hxiGL2FLuEEdBpA0E5s?e=j8Ojoe"
-            else:
-                FilePath = "https://azureresulticks-my.sharepoint.com/:f:/g/personal/qaautomation_resulticks_com/IgDhvIK9wDdITaaymyOnRwyJAbI13ZemizPMKee75rwCGcc?e=bcKydf"
+
+            if "resul" in ConfigReader.get_property("Project").lower():
+                if "daily" in suite:
+                    FilePath = "https://azureresulticks-my.sharepoint.com/:f:/g/personal/qaautomation_resulticks_com/IgD9QKIO4zuUQLf9Fq8ecCT5AbMtLEOO069oUwH5tJIh1Gs?e=8G1xau"
+                elif "post" in suite:
+                    FilePath = "https://azureresulticks-my.sharepoint.com/:f:/g/personal/qaautomation_resulticks_com/IgBU4Mk9VkvZQ774UTB5Zy-AAVr5hxiGL2FLuEEdBpA0E5s?e=j8Ojoe"
+                else:
+                    FilePath = "https://azureresulticks-my.sharepoint.com/:f:/g/personal/qaautomation_resulticks_com/IgDhvIK9wDdITaaymyOnRwyJAbI13ZemizPMKee75rwCGcc?e=bcKydf"
+
+            elif "star" in ConfigReader.get_property("Project").lower():
+                if "daily" in suite:
+                    FilePath = "https://azureresulticks-my.sharepoint.com/:f:/g/personal/qaautomation_resulticks_com/IgDu-Dr03gEaT5lao2W0fENDAX_RSiJTooP1ilVxEWwzNHc?e=DQ5huh"
+                elif "post" in suite:
+                    FilePath = "https://azureresulticks-my.sharepoint.com/:f:/g/personal/qaautomation_resulticks_com/IgAxXkkIa0V1Q5_JlXzqvOAZAWXqVj667E2gr2AY-V51XKs?e=yAl3ge"
+                else:
+                    FilePath = "https://azureresulticks-my.sharepoint.com/:f:/g/personal/qaautomation_resulticks_com/IgBUVjqd5sbKRYbRiQRVLrHwAaNhMRor9AMg57029Y2xThE?e=iuLCZ5"
 
         valid_fails = []
 
