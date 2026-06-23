@@ -555,7 +555,7 @@ class SummaryReportGenerator:
             html.append('<td class="expand-icon"><span class="chevron">&#9654;</span></td>')
             html.append(f'<td class="td-module">{escaped_module}</td>')
             html.append(f'<td class="td-tcid">{escaped_testCaseId}</td>')
-            html.append(f'<td class="td-desc"><span class="desc-chip" data-full-desc="{escaped_desc_display}">{escaped_desc_display}</span></td>')
+            html.append(f'<td class="td-desc"><span class="desc-chip desc-chip-tip" data-tooltip="{escaped_desc_display}">{escaped_desc_display}</span></td>')
 
             # Status column: badge, no link
             html.append(f'<td style="text-align:center;">{statusBadge}</td>')
@@ -792,19 +792,23 @@ document.addEventListener('DOMContentLoaded', function() {
     position: fixed;
     background: #1e293b;
     color: #fff;
-    padding: 7px 11px;
-    border-radius: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
     font-family: 'Segoe UI', sans-serif;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.2px;
-    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.1px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-width: 280px;
+    text-align: center;
     pointer-events: none;
     opacity: 0;
-    transform: translateY(2px);
-    transition: opacity 0.12s ease, transform 0.12s ease;
+    transform: translateY(4px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
     z-index: 99999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    line-height: 1.45;
 }}
 #miniTooltip.show {{
     opacity: 1;
@@ -816,7 +820,7 @@ document.addEventListener('DOMContentLoaded', function() {
     top: 100%;
     left: 50%;
     transform: translateX(-50%);
-    border: 5px solid transparent;
+    border: 7px solid transparent;
     border-top-color: #1e293b;
 }}
 
@@ -917,38 +921,6 @@ body {{ font-family: 'Segoe UI', sans-serif; background:#f0f4fa; margin:0; color
 }}
 .td-date {{ font-size: 0.92em; color: #475569; font-weight: 500; white-space: nowrap; }}
 .td-dur {{ font-size: 0.91em; color: #64748b; white-space: nowrap; text-align: center; }}
-/* ===== Description chip tooltip ===== */
-.desc-chip {{ position: relative; cursor: default; }}
-.desc-tooltip {{
-    visibility: hidden;
-    opacity: 0;
-    pointer-events: none;
-    position: fixed;
-    z-index: 9999;
-    background: #1e293b;
-    color: #f1f5f9;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    padding: 8px 13px;
-    font-size: 0.87em;
-    font-weight: 500;
-    line-height: 1.5;
-    max-width: 360px;
-    white-space: normal;
-    word-break: break-word;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.22);
-    transition: opacity 0.15s ease;
-}}
-.desc-tooltip::after {{
-    content: '';
-    position: absolute;
-    bottom: -7px;
-    left: 18px;
-    border-width: 7px 7px 0 7px;
-    border-style: solid;
-    border-color: #1e293b transparent transparent transparent;
-    display: block;
-}}
 
 /* ===== Status Badges ===== */
 .badge {{
@@ -1269,76 +1241,28 @@ function populateModuleTable() {{
 
     document.addEventListener('mouseover', function(e) {{
         var el = e.target;
-        if (!el || !el.classList || !el.classList.contains('mini-circle')) return;
+        if (!el || !el.classList) return;
+        var isCircle = el.classList.contains('mini-circle');
+        var isDesc = el.classList.contains('desc-chip-tip');
+        if (!isCircle && !isDesc) return;
         var text = el.getAttribute('data-tooltip');
         if (!text) return;
         tip.textContent = text;
         tip.style.left = '-9999px';
         tip.style.top = '-9999px';
         tip.classList.add('show');
-        // Position after the browser has laid out the tooltip with its new text.
         requestAnimationFrame(function() {{ positionTip(el); }});
     }});
 
     document.addEventListener('mouseout', function(e) {{
         var el = e.target;
-        if (!el || !el.classList || !el.classList.contains('mini-circle')) return;
+        if (!el || !el.classList) return;
+        if (!el.classList.contains('mini-circle') && !el.classList.contains('desc-chip-tip')) return;
         tip.classList.remove('show');
     }});
 
     window.addEventListener('scroll', function() {{
         tip.classList.remove('show');
-    }}, true);
-}})();
-
-/* ===== Floating tooltip for Description chips =====
-   Reads data-full-desc from .desc-chip spans and shows a fixed tooltip
-   so the full text is always visible even when truncated by -webkit-line-clamp. */
-(function() {{
-    var descTip = document.createElement('div');
-    descTip.className = 'desc-tooltip';
-    descTip.id = 'descTooltip';
-    document.body.appendChild(descTip);
-
-    function positionDescTip(target) {{
-        var rect = target.getBoundingClientRect();
-        var tipRect = descTip.getBoundingClientRect();
-        var margin = 8;
-        var left = rect.left;
-        var top = rect.top - tipRect.height - 10;
-        // Clamp horizontally
-        if (left + tipRect.width > window.innerWidth - margin)
-            left = window.innerWidth - tipRect.width - margin;
-        if (left < margin) left = margin;
-        // If not enough room above, show below
-        if (top < margin) top = rect.bottom + 10;
-        descTip.style.left = left + 'px';
-        descTip.style.top  = top  + 'px';
-    }}
-
-    document.addEventListener('mouseover', function(e) {{
-        var el = e.target;
-        if (!el || !el.classList || !el.classList.contains('desc-chip')) return;
-        var text = el.getAttribute('data-full-desc');
-        if (!text) return;
-        descTip.textContent = text;
-        descTip.style.left = '-9999px';
-        descTip.style.top  = '-9999px';
-        descTip.style.visibility = 'visible';
-        descTip.style.opacity = '1';
-        requestAnimationFrame(function() {{ positionDescTip(el); }});
-    }});
-
-    document.addEventListener('mouseout', function(e) {{
-        var el = e.target;
-        if (!el || !el.classList || !el.classList.contains('desc-chip')) return;
-        descTip.style.visibility = 'hidden';
-        descTip.style.opacity = '0';
-    }});
-
-    window.addEventListener('scroll', function() {{
-        descTip.style.visibility = 'hidden';
-        descTip.style.opacity = '0';
     }}, true);
 }})();
 
@@ -1375,6 +1299,9 @@ document.addEventListener('click', function(e) {{
         try:
             os.makedirs("reports", exist_ok=True)
             suite_start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            WeeklyStatusManager.save_current_run(
+                DetailedTestReporter.get_test_executions()
+            )
             json_str = SummaryReportGenerator.generate_report_json(suite_start_time)
             json_path = os.path.join("reports", "report.json")
             with open(json_path, 'w', encoding='utf-8') as f:
