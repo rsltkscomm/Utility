@@ -19,9 +19,9 @@ class FrameworkConstants():
     UPLOAD_FILE_PATH = Path(os.getcwd()) / "loc_utils" / "data" / "UploadFiles"
     PROJECT_NAME = os.getenv("PROJECT_NAME")
     PROJECT_DIR = os.path.join(os.getcwd(), "features")
-    MARKETING_STAR_DAILY_PATH = ONEDRIVE_BASE_PATH / "Marketing Star Daily Checklist"
-    MARKETING_STAR_DEPLOY_PATH = ONEDRIVE_BASE_PATH / "MarketingStar DeploymentChecklist"
-    MARKETING_STAR_REGRESSION_PATH = ONEDRIVE_BASE_PATH / "Marketing Star Regression"
+    MARKETING_STAR_DAILY_PATH = ONEDRIVE_BASE_PATH / "MarketingStarDailyChecklist"
+    MARKETING_STAR_DEPLOY_PATH = ONEDRIVE_BASE_PATH / "MarketingStarDeploymentChecklist"
+    MARKETING_STAR_REGRESSION_PATH = ONEDRIVE_BASE_PATH / "MarketingStarRegression"
 
     @staticmethod
     def get_download_file_path():
