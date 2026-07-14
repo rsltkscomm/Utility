@@ -10,7 +10,7 @@ from utils.ini_file_reader.config_reader import ConfigReader
 
 from utils.services.locator_store import LocatorStore
 from utils.services.locator_healer import LocatorHealer
-from utils.services.healing_config import healing_enabled,ai_healing_enabled
+from utils.services.healing_config import healing_enabled, ai_healing_enabled
 
 
 class HealingPlaywrightActions(PlaywrightActions):
@@ -81,11 +81,11 @@ class HealingPlaywrightActions(PlaywrightActions):
         return action_fn(locator)
 
     def _execute_with_healing(
-        self,
-        locator: str,
-        action_fn: Callable[[str], Any],
-        *,
-        allow_false: bool = False,
+            self,
+            locator: str,
+            action_fn: Callable[[str], Any],
+            *,
+            allow_false: bool = False,
     ) -> Any:
         if not self._healing_enabled:
             return action_fn(locator)
@@ -126,10 +126,10 @@ class HealingPlaywrightActions(PlaywrightActions):
                     continue
 
         if (
-            self._healing_enabled
-            and page_class
-            and locator_name
-            and ai_healing_enabled()
+                self._healing_enabled
+                and page_class
+                and locator_name
+                and ai_healing_enabled()
         ):
             ai_locator = self._healer.generate_healed_locator(
                 self.page,

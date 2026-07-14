@@ -48,6 +48,14 @@ class TestContext:
         self._local.current_testcase_id = value
 
     @property
+    def current_testcase_ids(self):
+        return getattr(self._local, 'current_testcase_ids', None)
+
+    @current_testcase_ids.setter
+    def current_testcase_ids(self, value):
+        self._local.current_testcase_ids = value
+
+    @property
     def current_scenario_name(self):
         return getattr(self._local, 'current_scenario_name', None)
 
