@@ -161,39 +161,46 @@ class DetailedTestReporter:
     @classmethod
     def log_step(cls, action, expected_result, actual_result, status: bool, page=None):
         from utils.excel_helper.test_context import TestContext
-        test_case_id = getattr(TestContext, "current_testcase_id", None)
-        if not test_case_id:
+        test_case_ids = getattr(TestContext, "current_testcase_ids", None)
+        if not test_case_ids:
+            single = getattr(TestContext, "current_testcase_id", None)
+            test_case_ids = [single] if single else []
+
+        if not test_case_ids:
             print("⚠️ Cannot log step without an active test_case_id in TestContext.")
             return
 
         step_status = StepStatus.PASS if status else StepStatus.FAIL
 
-        execution = cls._latest_execution(test_case_id)
-
-        if not execution:
-            print(f"⚠️ Cannot find active test execution for {test_case_id}.")
-            return
-
-        step = TestStep()
-        step.step_no = len(execution.steps) + 1
-        step.action = action
-        step.expected_result = expected_result
-        step.actual_result = actual_result
-        step.status = step_status
-
+        screenshot_path = None
         if page:
             try:
                 screenshot_bytes = page.screenshot()
-                step.screenshot_path = "data:image/png;base64," + base64.b64encode(screenshot_bytes).decode()
+                screenshot_path = "data:image/png;base64," + base64.b64encode(screenshot_bytes).decode()
             except Exception:
                 pass
 
-        execution.steps.append(step)
+        for test_case_id in test_case_ids:
+            execution = cls._latest_execution(test_case_id)
 
-        if step_status == StepStatus.FAIL:
-            execution.status = ExecutionStatus.FAIL
+            if not execution:
+                print(f"⚠️ Cannot find active test execution for {test_case_id}.")
+                continue
 
-        execution.end_time = datetime.now()
+            step = TestStep()
+            step.step_no = len(execution.steps) + 1
+            step.action = action
+            step.expected_result = expected_result
+            step.actual_result = actual_result
+            step.status = step_status
+            step.screenshot_path = screenshot_path
+
+            execution.steps.append(step)
+
+            if step_status == StepStatus.FAIL:
+                execution.status = ExecutionStatus.FAIL
+
+            execution.end_time = datetime.now()
 
     @classmethod
     def add_step(cls, test_case_id, action, expected_result, actual_result, status, page=None):

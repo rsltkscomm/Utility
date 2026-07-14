@@ -88,6 +88,9 @@ def browser_instance(playwright,request):
                     TestContext.video_path = new_path
                     print(f"\n[VIDEO] Video saved for remote upload: {new_path}")
                     test_case_id = getattr(TestContext, "current_testcase_id", None)
+                    test_case_ids = getattr(TestContext, "current_testcase_ids", None) or (
+                        [test_case_id] if test_case_id else []
+                    )
                     if test_case_id:
                         try:
                             url = MEDIA_UPLOADER.upload(
@@ -98,7 +101,8 @@ def browser_instance(playwright,request):
                                 worker_id=worker_id,
                             )
                             if url:
-                                DetailedTestReporter.attach_video(test_case_id, url)
+                                for tc_id in test_case_ids:
+                                    DetailedTestReporter.attach_video(tc_id, url)
                                 print(f"\n[VIDEO] Uploaded video and attached URL: {url}")
                         except Exception as upload_error:
                             print(f"[VIDEO] Upload failed: {upload_error}")
