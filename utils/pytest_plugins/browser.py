@@ -17,6 +17,74 @@ from utils.services.media_uploader import MediaUploader
 MEDIA_UPLOADER = MediaUploader()
 
 
+def _register_network_capture(page):
+    """Passively record every XHR/fetch call the browser makes during a UI scenario.
+
+    Independent of the API-validation flow (steps/API/*, api/clients/BaseClient) -
+    this only observes real browser network traffic behind the scenes.
+    """
+
+    def _on_request_finished(request):
+        # request.timing is only fully populated once the request has
+        # finished (responseEnd is -1 while the response body is still
+        # streaming), so we must listen on "requestfinished", not
+        # "response" - otherwise durationMillis is always captured as 0.
+        try:
+            if request.resource_type not in ("xhr", "fetch"):
+                return
+
+            response = request.response()
+            if response is None:
+                return
+
+            test_case_ids = getattr(TestContext, "current_testcase_ids", None)
+            if not test_case_ids:
+                single = getattr(TestContext, "current_testcase_id", None)
+                test_case_ids = [single] if single else [None]
+
+            duration_ms = 0
+            try:
+                timing = request.timing
+                if timing and timing.get("responseEnd", -1) >= 0:
+                    duration_ms = int(timing["responseEnd"])
+            except Exception:
+                pass
+
+            try:
+                request_headers = request.all_headers()
+            except Exception:
+                request_headers = None
+
+            try:
+                response_headers = response.all_headers()
+            except Exception:
+                response_headers = None
+
+            try:
+                response_body = response.text()
+            except Exception:
+                response_body = None
+
+            for test_case_id in test_case_ids:
+                DetailedTestReporter.record_api_call(
+                    test_case_id=test_case_id,
+                    method=request.method,
+                    url=request.url,
+                    status_code=response.status,
+                    duration_ms=duration_ms,
+                    request_body=request.post_data,
+                    response_body=response_body,
+                    request_headers=request_headers,
+                    response_headers=response_headers,
+                    success=response.ok,
+                )
+        except Exception:
+            # Network telemetry must never break the actual UI test.
+            pass
+
+    page.on("requestfinished", _on_request_finished)
+
+
 @pytest.fixture(scope="function")
 def browser_instance(playwright,request):
     if any(mark in request.node.keywords for mark in ["api", "login_api"]):
@@ -68,6 +136,7 @@ def browser_instance(playwright,request):
 
     page = context.new_page()
     TestContext.video_path = None
+    _register_network_capture(page)
 
     yield page
 
