@@ -195,7 +195,7 @@ def _purge_old_entries(records: dict, keep_days: int = 30) -> None:
 
 class JSONStatusManager:
     """
-    Atomic JSON-backed store for 7-day execution history, segregated by project.
+    Atomic JSON-backed store for execution history, segregated by project.
 
     Storage structure:
         execution_history/
@@ -206,6 +206,17 @@ class JSONStatusManager:
 
     Supported suite keys : daily, deployment, production, regression
     Supported env keys   : Run, Run19, Run23, Run24, Team
+
+    History window rules (used by read_last_7_days_status):
+      • daily suite       → last 7 CALENDAR DATES (today back to today-6).
+                             A date with no run recorded shows as "SKIPPED",
+                             since daily suites are expected to run every day.
+      • every other suite  → last 7 ACTUAL EXECUTIONS (the 7 most recent
+        (deployment/post,     run records for that test, oldest → newest),
+         production,          regardless of how many calendar days separate
+         regression, ...)     them. This suits suites like "post" that may
+                               only run once a week — using calendar dates
+                               for those would show mostly "SKIPPED" gaps.
 
     Entry points:
       save_current_run(test_executions)   →  write today's results
@@ -268,12 +279,22 @@ class JSONStatusManager:
         project_key: str = None,
     ) -> dict:
         """
-        Return the 7-day history map consumed by the HTML report generator.
+        Return the 7-slot history map consumed by the HTML report generator.
+
+        Behaviour depends on the suite type:
+          • "daily"           → 7 slots = last 7 CALENDAR DATES (oldest first).
+                                 Any date with no recorded run is "SKIPPED".
+          • anything else     → 7 slots = last 7 ACTUAL EXECUTIONS (oldest
+            (deployment/post,    first) for that test, taken straight from
+             production,         its recorded entries regardless of the gap
+             regression, ...)    between run dates. If fewer than 7 runs
+                                 exist yet, the remaining leading slots are
+                                 padded with "SKIPPED".
 
         Returns
         -------
         dict  →  { "scenario_id_or_tc_id": ["SKIPPED", "PASS", "FAIL", ...] }
-                 7-element list, oldest first; missing days filled with "SKIPPED".
+                 always a 7-element list.
 
         Parameters
         ----------
@@ -292,20 +313,36 @@ class JSONStatusManager:
         store   = _load_store(path)
         records = store.get("records", {})
 
-        # Last 7 calendar dates, oldest → newest
-        last_7_dates = [
-            (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
-            for i in range(6, -1, -1)
-        ]
-
         result = {}
-        for key, entry_list in records.items():
-            date_status = {
-                e["date"]: e["status"].upper()
-                for e in entry_list
-                if "date" in e and "status" in e
-            }
-            result[key] = [date_status.get(d, "SKIPPED") for d in last_7_dates]
+
+        if suite_key == "daily":
+            # Daily suites are expected to run every day, so anchor the 7 slots
+            # to the last 7 calendar dates and backfill missing days as SKIPPED.
+            last_7_dates = [
+                (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+                for i in range(6, -1, -1)
+            ]
+            for key, entry_list in records.items():
+                date_status = {
+                    e["date"]: e["status"].upper()
+                    for e in entry_list
+                    if "date" in e and "status" in e
+                }
+                result[key] = [date_status.get(d, "SKIPPED") for d in last_7_dates]
+        else:
+            # Non-daily suites (post/deployment, production, regression, ...)
+            # don't run every day - e.g. "post" may only run once a week - so
+            # instead of the last 7 calendar dates, take the last 7 ACTUAL
+            # EXECUTIONS recorded for each test, oldest -> newest.
+            for key, entry_list in records.items():
+                sorted_entries = sorted(
+                    (e for e in entry_list if "date" in e and "status" in e),
+                    key=lambda e: e["date"]
+                )
+                statuses = [e["status"].upper() for e in sorted_entries][-7:]
+                if len(statuses) < 7:
+                    statuses = ["SKIPPED"] * (7 - len(statuses)) + statuses
+                result[key] = statuses
 
         print(
             f"[INFO] Loaded JSON history for {len(result)} test cases "
