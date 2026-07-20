@@ -47,24 +47,8 @@ class TestExecution:
         self.video_url = None
 
 
-class ApiCallRecord:
-    def __init__(self):
-        self.test_case_id = ""
-        self.method = ""
-        self.url = ""
-        self.status_code = None
-        self.success = True
-        self.duration_ms = 0
-        self.request_body = None
-        self.response_body = None
-        self.request_headers = None
-        self.response_headers = None
-        self.timestamp = None
-
-
 class DetailedTestReporter:
     test_executions = []
-    api_calls = []
 
     # Store the mapping: { "scenario_name": "testcaseID" }
     session_map = {}
@@ -72,50 +56,28 @@ class DetailedTestReporter:
     @classmethod
     def create_detail_report(cls):
         cls.test_executions = []
-        cls.api_calls = []
 
     @classmethod
     def set_session_map(cls, mapping):
         cls.session_map = mapping
 
     @classmethod
-    def record_api_call(cls, test_case_id, method, url, status_code, duration_ms,
-                         request_body=None, response_body=None,
-                         request_headers=None, response_headers=None, success=True):
-        record = ApiCallRecord()
-        record.test_case_id = test_case_id or ""
-        record.method = (method or "").upper()
-        record.url = url or ""
-        record.status_code = status_code
-        record.duration_ms = duration_ms or 0
-        record.request_body = request_body
-        record.response_body = response_body
-        record.request_headers = request_headers
-        record.response_headers = response_headers
-        record.success = success
-        record.timestamp = datetime.now()
-        cls.api_calls.append(record)
-        return record
-
-    @classmethod
     def save_worker_state(cls):
         worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
         import pickle
         with open(f".report_state_{worker_id}.pkl", "wb") as f:
-            pickle.dump({"test_executions": cls.test_executions, "api_calls": cls.api_calls}, f)
+            pickle.dump(cls.test_executions, f)
 
     @classmethod
     def load_all_worker_states(cls):
         import glob
         import pickle
         cls.test_executions = []
-        cls.api_calls = []
         for file in glob.glob(".report_state_*.pkl"):
             try:
                 with open(file, "rb") as f:
-                    state = pickle.load(f)
-                    cls.test_executions.extend(state.get("test_executions", []))
-                    cls.api_calls.extend(state.get("api_calls", []))
+                    executions = pickle.load(f)
+                    cls.test_executions.extend(executions)
                 import os
                 os.remove(file)
             except Exception as e:
@@ -199,46 +161,39 @@ class DetailedTestReporter:
     @classmethod
     def log_step(cls, action, expected_result, actual_result, status: bool, page=None):
         from utils.excel_helper.test_context import TestContext
-        test_case_ids = getattr(TestContext, "current_testcase_ids", None)
-        if not test_case_ids:
-            single = getattr(TestContext, "current_testcase_id", None)
-            test_case_ids = [single] if single else []
-
-        if not test_case_ids:
+        test_case_id = getattr(TestContext, "current_testcase_id", None)
+        if not test_case_id:
             print("⚠️ Cannot log step without an active test_case_id in TestContext.")
             return
 
         step_status = StepStatus.PASS if status else StepStatus.FAIL
 
-        screenshot_path = None
+        execution = cls._latest_execution(test_case_id)
+
+        if not execution:
+            print(f"⚠️ Cannot find active test execution for {test_case_id}.")
+            return
+
+        step = TestStep()
+        step.step_no = len(execution.steps) + 1
+        step.action = action
+        step.expected_result = expected_result
+        step.actual_result = actual_result
+        step.status = step_status
+
         if page:
             try:
                 screenshot_bytes = page.screenshot()
-                screenshot_path = "data:image/png;base64," + base64.b64encode(screenshot_bytes).decode()
+                step.screenshot_path = "data:image/png;base64," + base64.b64encode(screenshot_bytes).decode()
             except Exception:
                 pass
 
-        for test_case_id in test_case_ids:
-            execution = cls._latest_execution(test_case_id)
+        execution.steps.append(step)
 
-            if not execution:
-                print(f"⚠️ Cannot find active test execution for {test_case_id}.")
-                continue
+        if step_status == StepStatus.FAIL:
+            execution.status = ExecutionStatus.FAIL
 
-            step = TestStep()
-            step.step_no = len(execution.steps) + 1
-            step.action = action
-            step.expected_result = expected_result
-            step.actual_result = actual_result
-            step.status = step_status
-            step.screenshot_path = screenshot_path
-
-            execution.steps.append(step)
-
-            if step_status == StepStatus.FAIL:
-                execution.status = ExecutionStatus.FAIL
-
-            execution.end_time = datetime.now()
+        execution.end_time = datetime.now()
 
     @classmethod
     def add_step(cls, test_case_id, action, expected_result, actual_result, status, page=None):
@@ -276,6 +231,39 @@ class DetailedTestReporter:
 
 
 class SummaryReportGenerator:
+
+    # Plain glyph symbols used in the "Last 7 Execution" column - NO circle
+    # background, just the colored symbol itself on a plain/white
+    # background: a green check (pass), a red X (fail), and an amber
+    # slashed-circle / "Ø" mark (skipped). uid is kept for call-site
+    # compatibility but is unused.
+    @staticmethod
+    def _mini_check_svg(uid=""):
+        return (
+            '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
+            '<path d="M4.3 12.8 L9.6 18.1 L19.7 5.9" fill="none" '
+            'stroke="#2fb344" stroke-width="3.2" stroke-linecap="round" '
+            'stroke-linejoin="round"/>'
+            '</svg>'
+        )
+
+    @staticmethod
+    def _mini_cross_svg(uid=""):
+        return (
+            '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
+            '<path d="M5.2 5.2 L18.8 18.8 M18.8 5.2 L5.2 18.8" '
+            'stroke="#e4483f" stroke-width="3.2" stroke-linecap="round"/>'
+            '</svg>'
+        )
+
+    MINI_SKIP_SVG = (
+        '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
+        '<circle cx="12" cy="12" r="8.3" fill="none" stroke="#f2a72e" '
+        'stroke-width="3"/>'
+        '<line x1="6.1" y1="17.9" x2="17.9" y2="6.1" stroke="#f2a72e" '
+        'stroke-width="3" stroke-linecap="round"/>'
+        '</svg>'
+    )
 
     @staticmethod
     def aggregate_stats():
@@ -370,33 +358,6 @@ class SummaryReportGenerator:
             "generatedBy": ConfigReader.get_property("USERNAME", "automation")
         }
 
-        def _serialize_api_call(call):
-            def _truncate(value):
-                if value is None:
-                    return None
-                text = value if isinstance(value, str) else json.dumps(value, default=str)
-                return text if len(text) <= 4000 else text[:3997] + "..."
-
-            return {
-                "testCaseId": call.test_case_id,
-                "method": call.method,
-                "url": call.url,
-                "statusCode": call.status_code,
-                "success": call.success,
-                "durationMillis": call.duration_ms,
-                "requestBody": _truncate(call.request_body),
-                "responseBody": _truncate(call.response_body),
-                "requestHeaders": _truncate(call.request_headers),
-                "responseHeaders": _truncate(call.response_headers),
-                "timestamp": call.timestamp.strftime("%y-%m-%d %H:%M:%S") if call.timestamp else "",
-            }
-
-        api_calls_by_test_case = {}
-        for call in DetailedTestReporter.api_calls:
-            api_calls_by_test_case.setdefault(call.test_case_id, []).append(call)
-
-        root["apiCalls"] = [_serialize_api_call(call) for call in DetailedTestReporter.api_calls]
-
         details = []
 
         for exec_obj in DetailedTestReporter.get_test_executions():
@@ -451,11 +412,7 @@ class SummaryReportGenerator:
                 "endTime": end_time_str,
                 "durationMillis": dur_ms,
                 "videoUrl": getattr(exec_obj, "video_url", "") or "",
-                "steps": steps,
-                "apiCalls": [
-                    _serialize_api_call(call)
-                    for call in api_calls_by_test_case.get(exec_obj.test_case_id, [])
-                ]
+                "steps": steps
             })
 
         root["details"] = details
@@ -468,32 +425,6 @@ class SummaryReportGenerator:
             return ""
         return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace(
             "'", "&#39;")
-
-    @staticmethod
-    def _is_api_call_error(call):
-        status_code = call.get("statusCode")
-        try:
-            if status_code is not None:
-                return int(status_code) >= 400
-        except (TypeError, ValueError):
-            pass
-        return not call.get("success", True)
-
-    @staticmethod
-    def _pretty_json(value):
-        """Best-effort pretty-print a captured header/body value as indented JSON."""
-        if value is None or value == "":
-            return "-"
-        obj = value
-        if isinstance(value, str):
-            try:
-                obj = json.loads(value)
-            except Exception:
-                return value
-        try:
-            return json.dumps(obj, indent=2, ensure_ascii=False, default=str)
-        except Exception:
-            return str(value)
 
     @staticmethod
     def get_status_class(status):
@@ -552,9 +483,15 @@ class SummaryReportGenerator:
         html.append('<div class="table-container">')
         html.append('<h3>Test Case Results</h3>')
 
-        html.append('<div class="toolbar"><div style="display:flex; gap:15px; flex-wrap:wrap; margin:20px 0;">')
+        html.append('<div class="toolbar"><div style="display:flex; gap:15px; flex-wrap:wrap; align-items:center; margin:20px 0;">')
         html.append('<div><label><b>Search:</b></label><input id="searchInput" placeholder="Search test cases..." type="text"/></div>')
         html.append('<div><label><b>Filter by Status:</b></label><select id="statusFilter"><option value="">All</option><option value="PASS">Passed</option><option value="FAIL">Failed</option><option value="SKIPPED">Skipped</option></select></div>')
+        html.append(
+            '<div class="last7-hint" style="margin-left:auto;">'
+            '<span class="last7-hint-icon">&#9432;</span>'
+            'Hover over the icons under <b>Last&nbsp;7&nbsp;Execution</b> to view the date &amp; result'
+            '</div>'
+        )
         html.append('</div></div>')
 
         html.append('''<table id="testcaseTable">
@@ -627,18 +564,21 @@ class SummaryReportGenerator:
             circles_parts = ['<div class="last7-row" onclick="event.stopPropagation()">']
             for idx, hist_status in enumerate(history):
                 hs = (hist_status or "SKIPPED").upper()
+                # unique per rendered icon (kept for compatibility - unused now, no filter to collide)
+                icon_uid = f"{counter}-{idx}"
                 if hs == "PASS":
                     mini_cls = "mini-pass"
-                    mini_sym = "&#10003;"
+                    mini_sym = SummaryReportGenerator._mini_check_svg(icon_uid)
                     status_label = "Pass"
                 elif hs == "FAIL":
                     mini_cls = "mini-fail"
-                    mini_sym = "&#10007;"
+                    mini_sym = SummaryReportGenerator._mini_cross_svg(icon_uid)
                     status_label = "Fail"
                 else:
                     mini_cls = "mini-skip"
-                    mini_sym = "&minus;"
+                    mini_sym = SummaryReportGenerator.MINI_SKIP_SVG
                     status_label = "Skipped"
+                # Tooltip logic is unchanged: still the calendar date/day + status label
                 tooltip = f"{last_7_meta[idx]['tooltip']} - {status_label}"
                 circles_parts.append(
                     f'<span class="mini-circle {mini_cls}" '
@@ -686,9 +626,7 @@ class SummaryReportGenerator:
                 html.append(f'<td>{screenshot_tag}</td>')
                 html.append('</tr>')
 
-            html.append('</table>')
-
-            html.append('</td></tr>')
+            html.append('</table></td></tr>')
             counter += 1
 
         html.append('</tbody></table></div>')
@@ -769,212 +707,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return "".join(html)
 
     @staticmethod
-    def generate_performance_html_from_json(json_str):
-        """
-        Scenario-level network performance report of the calls captured
-        passively during UI scenarios (see utils/pytest_plugins/browser.py).
-        Card/accordion layout (module / test case id / description) rather
-        than a table with a dedicated arrow column: expanding a scenario
-        reveals the API calls it made (with response code + load time), and
-        expanding a specific call reveals four drill-down panels - Request
-        Header, Request Payload, Response, Response Payload. Independent of
-        the step-level detail report and of the separate API-validation flow.
-        """
-        data = json.loads(json_str)
-        details = [t for t in data.get("details", []) if t.get("apiCalls")]
-        meta = data.get("meta", {})
-
-        companyLogoUrl = ConfigReader.get_property(
-            "CompanyLogo",
-            "https://www.resulticks.com/images/logos/resulticks-logo-blue.svg"
-        )
-        productLogoUrl = ConfigReader.get_property(
-            "ProductLogo",
-            "https://run19.resul.io/assets/resulticks-logo-white-391eec89.svg"
-        )
-
-        html = []
-        html.append('<div class="header">')
-        html.append(f'<img alt="Company Logo" src="{companyLogoUrl}"/>')
-        html.append('<h2>Performance Report</h2>')
-        html.append(f'<img alt="Product Logo" src="{productLogoUrl}"/>')
-        html.append('</div>')
-
-        html.append('<div class="environment-ribbon">')
-        html.append(f'<span><strong>Environment:</strong> {SummaryReportGenerator._escape_html(meta.get("environment", ""))}</span>')
-        html.append(f'<span><strong>Browser:</strong> {SummaryReportGenerator._escape_html(meta.get("browser", ""))}</span>')
-        html.append(f'<span><strong>Release:</strong> {SummaryReportGenerator._escape_html(meta.get("release", ""))}</span>')
-        html.append(f'<span><strong>Execution Date:</strong> {SummaryReportGenerator._escape_html(meta.get("executionDate", ""))}</span>')
-        html.append('</div>')
-
-        html.append('<div style="text-align:right; padding:10px;">')
-        html.append('<a class="back-btn" onclick="showSummaryReport()"><span class="back-btn-icon">&#8592;</span> Back to Summary</a>')
-        html.append('</div>')
-
-        html.append('<div class="table-container">')
-        html.append('<h3>Network Performance</h3>')
-
-        if not details:
-            html.append('<p style="padding:20px; color:#888;">No network calls were captured for this run.</p>')
-            html.append('</div>')
-            return "".join(html)
-
-        html.append('<div class="toolbar"><div style="display:flex; gap:15px; flex-wrap:wrap; margin:20px 0;">')
-        html.append('<div><label><b>Search:</b></label><input id="perfSearchInput" placeholder="Search scenarios..." type="text"/></div>')
-        html.append('</div></div>')
-
-        html.append('<div id="perfList" class="perf-list">')
-
-        counter = 1
-        for test in details:
-            module = test.get("module", "")
-            testCaseId = test.get("testCaseId", "")
-            desc = test.get("description", "")
-            desc_display = " ".join(w.capitalize() for w in desc.replace("-", "_").split("_")) if desc else ""
-            api_calls = test.get("apiCalls", [])
-
-            durations = [c.get("durationMillis", 0) or 0 for c in api_calls]
-            avg_ms = sum(durations) / len(durations) if durations else 0
-            speed_color = "#dc3545" if avg_ms >= 2000 else ("#e0a800" if avg_ms >= 1000 else "#28a745")
-            error_count = sum(1 for c in api_calls if SummaryReportGenerator._is_api_call_error(c))
-
-            escaped_module = SummaryReportGenerator._escape_html(module)
-            escaped_tcid = SummaryReportGenerator._escape_html(testCaseId)
-            escaped_desc = SummaryReportGenerator._escape_html(desc_display)
-            perf_id = f"perf{counter}"
-
-            html.append(f'<div class="perf-card" data-search-text="{escaped_module} {escaped_tcid} {escaped_desc}">')
-            html.append(
-                f'<div class="perf-card-header" data-perf-id="{perf_id}" data-expanded="false" onclick="togglePerfDetails(this)">'
-            )
-            html.append('<span class="chevron">&#9654;</span>')
-            html.append('<div class="perf-card-meta">')
-            html.append(f'<div class="perf-card-title">{escaped_module} <span class="perf-tcid-chip">{escaped_tcid}</span></div>')
-            html.append(f'<div class="perf-card-desc">{escaped_desc}</div>')
-            html.append('</div>')
-            html.append('<div class="perf-card-stats">')
-            error_badge = f'<span class="perf-error-badge">{error_count} failed</span>' if error_count else ''
-            html.append(f'<span class="perf-calls-badge">{len(api_calls)} calls</span>{error_badge}')
-            html.append(f'<span class="perf-avg-badge" style="color:{speed_color};">{avg_ms:.0f} ms avg</span>')
-            html.append('</div>')
-            html.append('</div>')
-
-            html.append(f'<div class="perf-card-body" id="{perf_id}-details" style="display:none;">')
-
-            for call_idx, call in enumerate(api_calls, start=1):
-                is_error = SummaryReportGenerator._is_api_call_error(call)
-                call_icon = "❌" if is_error else "✅"
-                call_class = "perf-call perf-call-error" if is_error else "perf-call"
-                status_style = "color:#dc3545; font-weight:700;" if is_error else "color:#28a745; font-weight:600;"
-                call_id = f"{perf_id}-call{call_idx}"
-
-                html.append(f'<div class="{call_class}">')
-                html.append(
-                    f'<div class="perf-call-header" data-call-id="{call_id}" data-expanded="false" '
-                    f'onclick="toggleApiCallDetails(this, event)">'
-                )
-                html.append('<span class="chevron">&#9654;</span>')
-                html.append(f'<span class="perf-call-method">{SummaryReportGenerator._escape_html(call.get("method", ""))}</span>')
-                html.append(f'<span class="perf-call-url">{SummaryReportGenerator._escape_html(call.get("url", ""))}</span>')
-                html.append(f'<span class="perf-call-status" style="{status_style}">{call_icon} {SummaryReportGenerator._escape_html(call.get("statusCode", ""))}</span>')
-                html.append(f'<span class="perf-call-time">{call.get("durationMillis", 0)} ms</span>')
-                html.append('</div>')
-
-                html.append(f'<div class="perf-call-body" id="{call_id}-details" style="display:none;">')
-                html.append('<div class="perf-tabs">')
-
-                tabs = [
-                    ("reqheader", "Request Header", call.get("requestHeaders")),
-                    ("reqpayload", "Request Payload", call.get("requestBody")),
-                    ("response", "Response Header", call.get("responseHeaders")),
-                    ("resppayload", "Response Payload", call.get("responseBody")),
-                ]
-                for tab_key, tab_label, tab_value in tabs:
-                    tab_id = f"{call_id}-{tab_key}"
-                    html.append('<div class="perf-tab-item">')
-                    html.append(
-                        f'<div class="perf-tab-label" data-tab-id="{tab_id}" onclick="togglePerfTab(this, event)">'
-                        f'<span class="chevron">&#9654;</span> {tab_label}</div>'
-                    )
-                    html.append(
-                        f'<pre class="api-body-pre perf-tab-content" id="{tab_id}-content" style="display:none;">'
-                        f'{SummaryReportGenerator._escape_html(SummaryReportGenerator._pretty_json(tab_value))}</pre>'
-                    )
-                    html.append('</div>')
-
-                html.append('</div>')  # .perf-tabs
-                html.append('</div>')  # .perf-call-body
-                html.append('</div>')  # .perf-call
-
-            html.append('</div>')  # .perf-card-body
-            html.append('</div>')  # .perf-card
-            counter += 1
-
-        html.append('</div>')  # #perfList
-        html.append('</div>')  # .table-container
-
-        html.append("""
-<script>
-function togglePerfDetails(header) {
-    var detailsRow = document.getElementById(header.getAttribute('data-perf-id') + '-details');
-    if (!detailsRow) return;
-    var expandIcon = header.querySelector('.chevron');
-    if (detailsRow.style.display === 'none') {
-        detailsRow.style.display = 'block';
-        header.setAttribute('data-expanded', 'true');
-        if (expandIcon) { expandIcon.innerHTML = '&#9660;'; }
-    } else {
-        detailsRow.style.display = 'none';
-        header.setAttribute('data-expanded', 'false');
-        if (expandIcon) { expandIcon.innerHTML = '&#9654;'; }
-    }
-}
-function toggleApiCallDetails(header, event) {
-    if (event) event.stopPropagation();
-    var detailsRow = document.getElementById(header.getAttribute('data-call-id') + '-details');
-    if (!detailsRow) return;
-    var expandIcon = header.querySelector('.chevron');
-    if (detailsRow.style.display === 'none') {
-        detailsRow.style.display = 'block';
-        header.setAttribute('data-expanded', 'true');
-        if (expandIcon) { expandIcon.innerHTML = '&#9660;'; }
-    } else {
-        detailsRow.style.display = 'none';
-        header.setAttribute('data-expanded', 'false');
-        if (expandIcon) { expandIcon.innerHTML = '&#9654;'; }
-    }
-}
-function togglePerfTab(label, event) {
-    if (event) event.stopPropagation();
-    var content = document.getElementById(label.getAttribute('data-tab-id') + '-content');
-    if (!content) return;
-    var expandIcon = label.querySelector('.chevron');
-    if (content.style.display === 'none') {
-        content.style.display = 'block';
-        if (expandIcon) { expandIcon.innerHTML = '&#9660;'; }
-    } else {
-        content.style.display = 'none';
-        if (expandIcon) { expandIcon.innerHTML = '&#9654;'; }
-    }
-}
-document.addEventListener('DOMContentLoaded', function() {
-    var searchInput = document.getElementById('perfSearchInput');
-    if (!searchInput) return;
-    searchInput.addEventListener('input', function() {
-        var searchText = searchInput.value.toLowerCase().trim();
-        var cards = document.querySelectorAll('#perfList > .perf-card');
-        cards.forEach(function(card) {
-            var cardText = (card.getAttribute('data-search-text') || '').toLowerCase();
-            card.style.display = (!searchText || cardText.includes(searchText)) ? '' : 'none';
-        });
-    });
-});
-</script>
-        """)
-
-        return "".join(html)
-
-    @staticmethod
     def format_millis_as_hms(millis_str):
         try:
             ms = int(millis_str)
@@ -1001,7 +733,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         # Generate detailed section HTML (no modal/history JS inside)
         detailedReportContent = SummaryReportGenerator.generate_detailed_html_from_json(json_str)
-        performanceReportContent = SummaryReportGenerator.generate_performance_html_from_json(json_str)
         executionDate = data.get("meta", {}).get("executionDate", "")
 
         companyLogoUrl = os.environ.get(
@@ -1038,7 +769,6 @@ document.addEventListener('DOMContentLoaded', function() {
         # We only need to escape the grave accent if it still appears in step text etc.
         # Using a simple replace here is safe because no template literals remain inside.
         escapedDetailedReportContent = detailedReportContent.replace('`', '&#96;')
-        escapedPerformanceReportContent = performanceReportContent.replace('`', '&#96;')
 
         html_template = f"""<!DOCTYPE html>
 <html lang="en">
@@ -1048,7 +778,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
-/* ===== Last 7 inline circles (replaces the old History popup) ===== */
+/* ===== Last 7 inline hand-drawn tick/cross icons ===== */
 .last7-row {{
     display: flex;
     gap: 6px;
@@ -1058,28 +788,34 @@ document.addEventListener('DOMContentLoaded', function() {
     width: 100%;
 }}
 .mini-circle {{
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    color: #fff;
+    width: 26px;
+    height: 26px;
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    font-weight: 800;
-    font-size: 13px;
-    line-height: 1;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.18);
     cursor: default;
     transition: transform 0.15s ease;
+    /* "visiblePainted" (SVG default) only responds to hover on painted
+       pixels - fill:none strokes leave the middle of the icon "dead" to the
+       mouse. Forcing pointer-events:all on the whole icon area (including
+       its transparent bits) keeps the tooltip responsive everywhere inside
+       the 26x26 box, not just directly over a stroke line. */
+    pointer-events: all;
 }}
 .mini-circle:hover {{
-    transform: scale(1.2);
+    transform: scale(1.25);
     z-index: 20;
 }}
-.mini-pass {{ background: linear-gradient(135deg, #22c55e, #16a34a); }}
-.mini-fail {{ background: linear-gradient(135deg, #ef4444, #dc2626); }}
-.mini-skip {{ background: linear-gradient(135deg, #fbbf24, #f59e0b); }}
+.mini-circle svg {{
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: all;
+}}
+.mini-circle svg * {{
+    pointer-events: all;
+}}
 
 .th-last7 {{ text-align: center !important; }}
 .td-last7 {{
@@ -1097,6 +833,29 @@ document.addEventListener('DOMContentLoaded', function() {
     align-items: center;
     justify-content: center;
     width: 100%;
+}}
+
+/* Hint pill telling the user the Last 7 Execution icons are hoverable.
+   Sits in the toolbar row, pushed to the far right via margin-left:auto
+   on the element itself, reusing the same soft-blue "chip" language as
+   .badge-pass / .desc-chip elsewhere in this report for visual consistency. */
+.last7-hint {{
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: linear-gradient(90deg, #eff6ff, #e0ecff);
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+    letter-spacing: 0.1px;
+    white-space: nowrap;
+}}
+.last7-hint-icon {{
+    font-size: 1.1em;
+    line-height: 1;
 }}
 
 /* Floating tooltip lives in <body> so it can't be clipped by .table-container overflow */
@@ -1308,37 +1067,6 @@ body {{ font-family: 'Segoe UI', sans-serif; background:#f0f4fa; margin:0; color
 .step-table td:nth-child(4), .step-table th:nth-child(4) {{ width:10%; text-align:center; }}
 .step-table td:nth-child(5), .step-table th:nth-child(5) {{ width:10%; text-align:center; }}
 .screenshot {{ max-width:80px; max-height:80px; object-fit:cover; cursor:pointer; border:1px solid #ccc; border-radius:4px; }}
-.api-body-pre {{ background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:10px; font-size:12px; max-height:300px; overflow:auto; white-space:pre-wrap; word-break:break-word; }}
-
-/* ===== Performance Report: scenario / call / tab accordion cards ===== */
-.perf-list {{ display:flex; flex-direction:column; gap:12px; padding:10px 0; }}
-.perf-card {{ border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,0.04); }}
-.perf-card-header {{ display:flex; align-items:center; gap:14px; padding:14px 16px; cursor:pointer; background:#f8fafc; transition:background 0.15s; }}
-.perf-card-header:hover {{ background:#eef2ff; }}
-.perf-card-header .chevron {{ color:#0e4494; font-size:13px; flex-shrink:0; }}
-.perf-card-meta {{ flex:1; min-width:0; }}
-.perf-card-title {{ font-weight:700; color:#1e293b; font-size:0.95em; }}
-.perf-tcid-chip {{ display:inline-block; margin-left:8px; padding:2px 8px; border-radius:12px; background:#e0e7ff; color:#3730a3; font-size:0.78em; font-weight:600; }}
-.perf-card-desc {{ color:#64748b; font-size:0.85em; margin-top:2px; }}
-.perf-card-stats {{ display:flex; align-items:center; gap:10px; flex-shrink:0; }}
-.perf-calls-badge {{ background:#e2e8f0; color:#334155; padding:4px 10px; border-radius:12px; font-size:0.78em; font-weight:600; white-space:nowrap; }}
-.perf-error-badge {{ background:#fdecea; color:#dc3545; padding:4px 10px; border-radius:12px; font-size:0.78em; font-weight:700; white-space:nowrap; }}
-.perf-avg-badge {{ font-weight:700; font-size:0.9em; white-space:nowrap; }}
-.perf-card-body {{ padding:12px 16px; background:#fff; border-top:1px solid #e2e8f0; display:flex; flex-direction:column; gap:8px; }}
-.perf-call {{ border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; }}
-.perf-call-error {{ border-color:#f5c2c7; }}
-.perf-call-header {{ display:flex; align-items:center; gap:12px; padding:10px 12px; cursor:pointer; background:#fafafa; }}
-.perf-call-header:hover {{ background:#f1f5f9; }}
-.perf-call-header .chevron {{ color:#0e4494; font-size:12px; flex-shrink:0; }}
-.perf-call-method {{ font-weight:700; font-size:0.8em; padding:2px 8px; border-radius:4px; background:#1e293b; color:#fff; flex-shrink:0; }}
-.perf-call-url {{ flex:1; min-width:0; word-break:break-all; font-size:0.85em; color:#334155; }}
-.perf-call-status {{ flex-shrink:0; font-size:0.85em; }}
-.perf-call-time {{ flex-shrink:0; font-size:0.85em; color:#64748b; font-family:monospace; }}
-.perf-call-body {{ padding:12px; background:#fff; border-top:1px solid #e2e8f0; }}
-.perf-tabs {{ display:flex; flex-direction:column; gap:6px; }}
-.perf-tab-label {{ cursor:pointer; padding:8px 10px; background:#f1f5f9; border-radius:6px; font-size:0.83em; font-weight:600; color:#334155; }}
-.perf-tab-label:hover {{ background:#e2e8f0; }}
-.perf-tab-content {{ margin-top:4px; }}
 .environment-ribbon {{ background:#f4f6f8; padding:10px; font-size:0.9em; border-bottom:1px solid #ddd; display:flex; justify-content:space-around; flex-wrap:wrap; gap:8px; }}
 .toolbar input, .toolbar select, .toolbar button {{ padding:6px 10px; border-radius:5px; border:1px solid #ccc; }}
 .toolbar button {{ background:#007bff; color:white; border:none; cursor:pointer; }}
@@ -1357,7 +1085,7 @@ video.modal-content {{ width:80%; background:black; }}
     color:#fff; font-size:30px; font-weight:bold; cursor:pointer;
 }}
 .chart-container canvas {{ max-width:300px !important; max-height:300px !important; }}
-.detailed-report-link {{ display:flex; justify-content:flex-end; align-items:center; gap:10px; padding:10px; flex-wrap:wrap; }}
+.detailed-report-link {{ text-align:right; padding:10px; display:block; }}
 .detailed-report-link a {{ text-decoration:none; }}
 .back-btn {{
     background: linear-gradient(90deg, #0e4494 0%, #1a6fd4 100%);
@@ -1389,7 +1117,6 @@ video.modal-content {{ width:80%; background:black; }}
     font-size: 1.05em;
     line-height: 1;
 }}
-.back-btn-sm {{ padding:6px 14px; font-size:0.82em; margin:0; }}
 .status-pass {{ color:#28a745; font-weight:bold; }}
 .status-fail {{ color:#dc3545; font-weight:bold; }}
 .status-skipped {{ color:#ffc107; font-weight:bold; }}
@@ -1416,8 +1143,7 @@ video.modal-content {{ width:80%; background:black; }}
         <div>🎯 Pass Rate: {passRate}</div>
     </div>
     <div class="detailed-report-link">
-        <a class="back-btn back-btn-sm" onclick="showDetailedReport()"><span class="back-btn-icon">&#8594;</span> Detailed Report</a>
-        <a class="back-btn back-btn-sm" onclick="showPerformanceReport()"><span class="back-btn-icon">&#8594;</span> Performance Report</a>
+        <a class="back-btn" onclick="showDetailedReport()"><span class="back-btn-icon">&#8594;</span> Detailed Report</a>
     </div>
     <div class="main">
         <div class="chart-container">
@@ -1442,11 +1168,6 @@ video.modal-content {{ width:80%; background:black; }}
     {escapedDetailedReportContent}
 </div>
 
-<!-- ===== Network Performance Section ===== -->
-<div id="performance-section" class="detailed-section" style="padding:20px; box-sizing:border-box; width:100%;">
-    {escapedPerformanceReportContent}
-</div>
-
 <!-- ===== Lightbox Modal ===== -->
 <div class="modal" id="lightboxModal">
     <span id="closeModal">&#x2716;</span>
@@ -1461,7 +1182,6 @@ video.modal-content {{ width:80%; background:black; }}
 /* ===== Navigation ===== */
 function showDetailedReport(moduleFilter) {{
     document.getElementById("summary-section").style.display = "none";
-    document.getElementById("performance-section").style.display = "none";
     document.getElementById("detailed-section").style.display = "block";
     window.scrollTo(0, 0);
 
@@ -1493,14 +1213,7 @@ function showDetailedReport(moduleFilter) {{
 }}
 function showSummaryReport() {{
     document.getElementById("detailed-section").style.display = "none";
-    document.getElementById("performance-section").style.display = "none";
     document.getElementById("summary-section").style.display = "block";
-    window.scrollTo(0, 0);
-}}
-function showPerformanceReport() {{
-    document.getElementById("summary-section").style.display = "none";
-    document.getElementById("detailed-section").style.display = "none";
-    document.getElementById("performance-section").style.display = "block";
     window.scrollTo(0, 0);
 }}
 
@@ -1598,11 +1311,13 @@ function populateModuleTable() {{
     }}
 
     document.addEventListener('mouseover', function(e) {{
-        var el = e.target;
-        if (!el || !el.classList) return;
-        var isCircle = el.classList.contains('mini-circle');
-        var isDesc = el.classList.contains('desc-chip-tip');
-        if (!isCircle && !isDesc) return;
+        // Use closest() rather than checking e.target directly: the mini-circle
+        // icons are now inline SVGs, so hovering the tick/cross/skip graphic
+        // makes e.target the inner <svg>/<path>/<circle>/<line>, not the
+        // .mini-circle span itself. closest() walks up to find the real
+        // tooltip-bearing element regardless of which inner node was hovered.
+        var el = e.target && e.target.closest ? e.target.closest('.mini-circle, .desc-chip-tip') : null;
+        if (!el) return;
         var text = el.getAttribute('data-tooltip');
         if (!text) return;
         tip.textContent = text;
@@ -1613,9 +1328,13 @@ function populateModuleTable() {{
     }});
 
     document.addEventListener('mouseout', function(e) {{
-        var el = e.target;
-        if (!el || !el.classList) return;
-        if (!el.classList.contains('mini-circle') && !el.classList.contains('desc-chip-tip')) return;
+        var el = e.target && e.target.closest ? e.target.closest('.mini-circle, .desc-chip-tip') : null;
+        if (!el) return;
+        // Don't hide the tooltip if the mouse simply moved to another child
+        // node still inside the same tooltip-bearing element (e.g. from the
+        // <svg> to an inner <path>).
+        var related = e.relatedTarget;
+        if (related && el.contains(related)) return;
         tip.classList.remove('show');
     }});
 
