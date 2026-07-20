@@ -281,19 +281,30 @@ class JSONStatusManager:
         """
         Return the 7-slot history map consumed by the HTML report generator.
 
+        Each slot is now a small dict — {"date": "YYYY-MM-DD" or None,
+        "status": "PASS"/"FAIL"/"SKIPPED"} — instead of a bare status
+        string, so the HTML report can display the REAL recorded date on
+        hover rather than an assumed calendar date. This matters for
+        suites that don't run daily (post/smoke/regression), where actual
+        recorded executions can be days or weeks apart.
+
         Behaviour depends on the suite type:
           • "daily"           → 7 slots = last 7 CALENDAR DATES (oldest first).
-                                 Any date with no recorded run is "SKIPPED".
+                                 Every slot carries its real calendar date.
+                                 Any date with no recorded run is
+                                 {"date": <that date>, "status": "SKIPPED"}.
           • anything else     → 7 slots = last 7 ACTUAL EXECUTIONS (oldest
-            (deployment/post,    first) for that test, taken straight from
-             production,         its recorded entries regardless of the gap
-             regression, ...)    between run dates. If fewer than 7 runs
-                                 exist yet, the remaining leading slots are
-                                 padded with "SKIPPED".
+            (deployment/post,    first) for that test, each carrying its
+             production,         OWN real recorded date. If fewer than 7
+             regression, ...)    runs exist yet, the remaining leading
+                                 slots are padded with {"date": None,
+                                 "status": "SKIPPED"} — there is no real
+                                 execution for that slot yet, so there is
+                                 no date to show.
 
         Returns
         -------
-        dict  →  { "scenario_id_or_tc_id": ["SKIPPED", "PASS", "FAIL", ...] }
+        dict  →  { "scenario_id_or_tc_id": [ {"date": ..., "status": ...}, ... ] }
                  always a 7-element list.
 
         Parameters
@@ -318,6 +329,7 @@ class JSONStatusManager:
         if suite_key == "daily":
             # Daily suites are expected to run every day, so anchor the 7 slots
             # to the last 7 calendar dates and backfill missing days as SKIPPED.
+            # Every slot keeps its real calendar date, even when SKIPPED.
             last_7_dates = [
                 (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
                 for i in range(6, -1, -1)
@@ -328,21 +340,31 @@ class JSONStatusManager:
                     for e in entry_list
                     if "date" in e and "status" in e
                 }
-                result[key] = [date_status.get(d, "SKIPPED") for d in last_7_dates]
+                result[key] = [
+                    {"date": d, "status": date_status.get(d, "SKIPPED")}
+                    for d in last_7_dates
+                ]
         else:
             # Non-daily suites (post/deployment, production, regression, ...)
             # don't run every day - e.g. "post" may only run once a week - so
             # instead of the last 7 calendar dates, take the last 7 ACTUAL
-            # EXECUTIONS recorded for each test, oldest -> newest.
+            # EXECUTIONS recorded for each test, each keeping its own real
+            # recorded date, oldest -> newest.
             for key, entry_list in records.items():
                 sorted_entries = sorted(
                     (e for e in entry_list if "date" in e and "status" in e),
                     key=lambda e: e["date"]
                 )
-                statuses = [e["status"].upper() for e in sorted_entries][-7:]
-                if len(statuses) < 7:
-                    statuses = ["SKIPPED"] * (7 - len(statuses)) + statuses
-                result[key] = statuses
+                last_entries = sorted_entries[-7:]
+                slots = [
+                    {"date": e["date"], "status": e["status"].upper()}
+                    for e in last_entries
+                ]
+                if len(slots) < 7:
+                    # No real execution exists yet for these leading slots,
+                    # so there is no real date to attach - date stays None.
+                    slots = [{"date": None, "status": "SKIPPED"}] * (7 - len(slots)) + slots
+                result[key] = slots
 
         print(
             f"[INFO] Loaded JSON history for {len(result)} test cases "

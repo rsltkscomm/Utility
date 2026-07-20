@@ -437,6 +437,21 @@ class SummaryReportGenerator:
         return ""
 
     @staticmethod
+    def _format_history_date(date_str):
+        """
+        Format a 'YYYY-MM-DD' date string (as stored by JSONStatusManager)
+        into the tooltip's display format, e.g. 'Fri, 17 Jul 2026'.
+        Returns None if date_str is missing/empty/malformed, so the caller
+        can fall back to a "No Execution Recorded" tooltip.
+        """
+        if not date_str:
+            return None
+        try:
+            return datetime.strptime(date_str, "%Y-%m-%d").strftime("%a, %d %b %Y")
+        except Exception:
+            return None
+
+    @staticmethod
     def generate_detailed_html_from_json(json_str):
         """
         Generates only the inner HTML for the detailed report section.
@@ -516,15 +531,6 @@ class SummaryReportGenerator:
   <th class="th-last7">Last 7 Execution</th>
 </tr></thead><tbody>''')
 
-        # Precompute the labels for the last 7 days (oldest -> newest, same order as history list)
-        today = datetime.now()
-        last_7_meta = []
-        for i in range(6, -1, -1):
-            d = today - timedelta(days=i)
-            last_7_meta.append({
-                "tooltip": d.strftime("%a, %d %b %Y"),
-            })
-
         counter = 1
         for test in details:
             module = test.get("module", "")
@@ -553,17 +559,30 @@ class SummaryReportGenerator:
             statusClass = SummaryReportGenerator.get_status_class(status)
             videoLink = f'<a href="#" class="play-video-btn" data-video="{videoUrl}" onclick="playVideoHandler(event, this)"><span class="video-btn"><span class="video-btn-icon">&#9654;</span> View</span></a>' if videoUrl else "<span style='color:#bbb'>—</span>"
 
-            # Build inline circles for the Last 7 column
-            history = list(test.get("history", []))
-            # Pad at the beginning (older days) if there are fewer than 7 entries
+            # Build inline circles for the Last 7 column.
+            # Each entry from JSONStatusManager is now {"date": ..., "status": ...}
+            # so the tooltip can show the test's REAL recorded execution date
+            # (which for post/smoke/regression suites can be days or weeks
+            # apart) instead of an assumed calendar date. A plain string is
+            # still accepted for backward compatibility with any older
+            # cached report.json that predates this change.
+            raw_history = list(test.get("history", []))
+            history = []
+            for h in raw_history:
+                if isinstance(h, dict):
+                    history.append({"date": h.get("date"), "status": (h.get("status") or "SKIPPED").upper()})
+                else:
+                    history.append({"date": None, "status": (h or "SKIPPED").upper()})
+            # Pad at the beginning if there are fewer than 7 entries - these
+            # padded slots have no real execution yet, so no date either.
             while len(history) < 7:
-                history.insert(0, "SKIPPED")
+                history.insert(0, {"date": None, "status": "SKIPPED"})
             # Keep only the most recent 7
             history = history[-7:]
 
             circles_parts = ['<div class="last7-row" onclick="event.stopPropagation()">']
-            for idx, hist_status in enumerate(history):
-                hs = (hist_status or "SKIPPED").upper()
+            for idx, hist_entry in enumerate(history):
+                hs = hist_entry["status"]
                 # unique per rendered icon (kept for compatibility - unused now, no filter to collide)
                 icon_uid = f"{counter}-{idx}"
                 if hs == "PASS":
@@ -578,8 +597,13 @@ class SummaryReportGenerator:
                     mini_cls = "mini-skip"
                     mini_sym = SummaryReportGenerator.MINI_SKIP_SVG
                     status_label = "Skipped"
-                # Tooltip logic is unchanged: still the calendar date/day + status label
-                tooltip = f"{last_7_meta[idx]['tooltip']} - {status_label}"
+                # Tooltip now uses the REAL recorded date for this execution
+                # (or "No Execution Recorded" if this slot has no run yet).
+                formatted_date = SummaryReportGenerator._format_history_date(hist_entry.get("date"))
+                if formatted_date:
+                    tooltip = f"{formatted_date} - {status_label}"
+                else:
+                    tooltip = "No Execution Recorded"
                 circles_parts.append(
                     f'<span class="mini-circle {mini_cls}" '
                     f'data-tooltip="{SummaryReportGenerator._escape_html(tooltip)}">'
@@ -788,8 +812,8 @@ document.addEventListener('DOMContentLoaded', function() {
     width: 100%;
 }}
 .mini-circle {{
-    width: 26px;
-    height: 26px;
+    width: 23px;
+    height: 23px;
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
