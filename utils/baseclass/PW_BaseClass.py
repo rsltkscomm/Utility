@@ -1128,4 +1128,64 @@ class PlaywrightActions(WebActions):
             return False
 
 
+    def drag_list_dynamic_individual_to_canvas(self):
+        try:
+            page = self.page
+            self.wait_a_second()
+            # Locate drag element
+            drag_element = self.locator("//i[contains(@class,'dynamic')]")
+            source_box = drag_element.bounding_box()
 
+            if not source_box:
+                print("Drag element not found")
+                return False
+
+            # Move mouse to center of drag element
+            page.mouse.move(
+                source_box["x"] + source_box["width"] / 2,
+                source_box["y"] + source_box["height"] / 2,
+                steps=17
+            )
+            page.mouse.down()
+
+            # Wait before moving to canvas
+            page.wait_for_timeout(1000)
+
+            # Hover on canvas
+            page.hover("#main-canvas")
+
+            # Locate drop element
+            drop_element = page.locator("//div[contains(@class,'placeholder-text res-mdc')]")
+
+            # Wait until visible
+            drop_element.wait_for(state="visible", timeout=5000)
+
+            if drop_element.is_visible():
+                drop_box = drop_element.bounding_box()
+
+                if not drop_box:
+                    print("Drop element box not found")
+                    return False
+
+                # Move to drop target center
+                page.mouse.move(
+                    drop_box["x"] + drop_box["width"] / 2,
+                    drop_box["y"] + drop_box["height"] / 2,
+                    steps=17
+                )
+
+                page.wait_for_timeout(1000)
+
+                # Release mouse (drop)
+                page.mouse.up()
+
+                # Screenshot (assuming method exists)
+
+                return True
+            else:
+                print("Drop element not visible within timeout")
+                return False
+
+        except Exception as e:
+            print(f"Error occurred: {e}")
+            return False
