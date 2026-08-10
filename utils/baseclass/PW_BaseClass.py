@@ -1189,3 +1189,159 @@ class PlaywrightActions(WebActions):
         except Exception as e:
             print(f"Error occurred: {e}")
             return False
+
+    def download_file_by_url(self, url):
+        try:
+            from pathlib import Path
+            import os
+            import time
+            import zipfile
+            download_dir = Path(os.getcwd()) / "data" / "downloaded_file"
+            download_dir.mkdir(parents=True, exist_ok=True)
+
+            print(f"🔗 Download URL: {url}")
+
+            with self.page.expect_download(timeout=30000) as download_info:
+                self.page.goto(url)
+
+            download = download_info.value
+
+            zip_name = download.suggested_filename or \
+                       f"download_{int(time.time())}.zip"
+
+            zip_path = download_dir / zip_name
+
+            download.save_as(str(zip_path))
+
+            print(f"📦 ZIP downloaded: {zip_path}")
+
+            if not zip_path.exists():
+                raise Exception("ZIP file was not saved")
+
+            # Extract ZIP
+            with zipfile.ZipFile(zip_path, "r") as zip_ref:
+
+                csv_files = [
+                    file_name
+                    for file_name in zip_ref.namelist()
+                    if file_name.lower().endswith(".csv")
+                ]
+
+                if not csv_files:
+                    raise Exception("No CSV file found inside ZIP")
+
+                csv_file = csv_files[0]
+
+                zip_ref.extract(csv_file, download_dir)
+
+            csv_path = download_dir / csv_file
+
+            if not csv_path.exists():
+                raise Exception("CSV file was not extracted")
+
+            print(f"✅ CSV extracted: {csv_path}")
+
+            return csv_path
+
+        except Exception as e:
+            print(f"❌ Download failed: {str(e)}")
+            return None
+
+        except Exception as e:
+            print(f"❌ Download failed: {str(e)}")
+            return None
+
+    def file_handles(self):
+        csv_data = []
+
+        try:
+            path = Path(os.getcwd()) / "data" / "downloaded_file"
+            files = list(path.iterdir()) if path.exists() else []
+
+            if not files:
+                print("No files found in directory")
+                return csv_data
+            for file in files:
+                file_name = file.name
+                if file.exists() and file.suffix.lower() in [".csv", ".txt"]:
+
+                    print(f"Processing file: {file_name}")
+
+                    try:
+                        try:
+                            with open(file, "r", encoding="utf-16") as reader:
+                                header_line = reader.readline()
+
+                                if header_line and header_line.strip():
+                                    print("Using OLD logic (utf-16 + tab)")
+
+                                    headers = header_line.strip().split("\t")
+
+                                    for line in reader:
+                                        if not line.strip():
+                                            continue
+
+                                        values = line.strip().split("\t")
+                                        row_map = {}
+
+                                        for i in range(min(len(headers), len(values))):
+                                            row_map[headers[i].strip()] = values[i].strip()
+
+                                        csv_data.append(row_map)
+
+                                    continue  # ✅ success → skip new logic
+
+                        except Exception as e:
+                            print(f"Old logic failed: {e}")
+
+                        try:
+                            try:
+                                reader = open(file, "r", encoding="utf-8")
+                            except:
+                                reader = open(file, "r", encoding="latin-1")
+
+                            header_line = reader.readline()
+
+                            if not header_line or not header_line.strip():
+                                print("Empty header, skipping file")
+                                reader.close()
+                                continue
+
+                            print("Using NEW logic (auto detect)")
+
+                            delimiter = "," if "," in header_line else "\t"
+                            headers = header_line.strip().split(delimiter)
+
+                            for line in reader:
+                                if not line.strip():
+                                    continue
+
+                                values = line.strip().split(delimiter)
+                                row_map = {}
+
+                                for i in range(min(len(headers), len(values))):
+                                    row_map[headers[i].strip()] = values[i].strip()
+
+                                csv_data.append(row_map)
+
+                            reader.close()
+
+                        except Exception as e:
+                            print(f"New logic failed: {e}")
+
+                    except Exception as e:
+                        print(f"{file_name} Error: {e}")
+
+                    finally:
+                        try:
+                            if file.exists():
+                                file.unlink()
+                                print(f"Deleted file: {file_name}")
+                        except Exception as e:
+                            print(f"Delete error: {e}")
+
+            return csv_data
+
+        except Exception as e:
+            print(f"Error in file_handles: {e}")
+            return csv_data
