@@ -397,11 +397,18 @@ class SummaryReportGenerator:
         }
 
         def _serialize_api_call(call):
+            # Kept modest on purpose: this JSON is embedded straight into the
+            # report HTML, which then gets pushed whole to GitHub's Contents
+            # API. Large payloads (many scenarios x many captured calls x
+            # full bodies/headers) make that push heavier and more likely to
+            # trip repository-rule validation timeouts on the GitHub side.
+            _MAX_FIELD_CHARS = 1500
+
             def _truncate(value):
                 if value is None:
                     return None
                 text = value if isinstance(value, str) else json.dumps(value, default=str)
-                return text if len(text) <= 4000 else text[:3997] + "..."
+                return text if len(text) <= _MAX_FIELD_CHARS else text[:_MAX_FIELD_CHARS - 3] + "..."
 
             return {
                 "testCaseId": call.test_case_id,

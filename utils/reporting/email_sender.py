@@ -473,7 +473,10 @@ class EmailSender:
             for i in range(len(paths)):
                 cls.attach_file(msg, paths[i], names[i])  # ✅ FIXED
 
-        print("✅ Report published to GitHub:", cls.FilePath)
+        if github_url:
+            print("✅ Report published to GitHub:", cls.FilePath)
+        else:
+            print("❌ Report was NOT published to GitHub (see failure above); will retry via fallback in get_mail_html().")
 
     # -------------------------------
     # ATTACH FILE
