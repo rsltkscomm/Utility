@@ -13,7 +13,7 @@ def excel_reader():
     excel_name = "TestData.xlsx"
     if environment == "team":
         excel_name = f"TestData_{environment}_{username}.xlsx"
-    elif environment in ("run", "run19", "run24", "run23"):
+    elif environment in ("run", "run19", "run24","run23"):
         excel_name = f"TestData_{username}.xlsx"
     excel_path = os.path.join(
         project_root,
