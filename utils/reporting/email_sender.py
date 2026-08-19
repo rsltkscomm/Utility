@@ -754,9 +754,31 @@ class EmailSender:
                 "branch": "main"
             }
 
-            r = requests.put(upload_url, json=upload_body, headers=headers, timeout=60)
+            report_size_kb = len(report_content) / 1024
+            print(f"[GITHUB UPLOAD] Report payload size: {report_size_kb:.1f} KB (base64)")
 
-            if r.status_code not in (200, 201):
+            r = None
+            max_attempts = 3
+            for attempt in range(1, max_attempts + 1):
+                r = requests.put(upload_url, json=upload_body, headers=headers, timeout=60)
+
+                if r.status_code in (200, 201):
+                    break
+
+                # GitHub's own error message for this case literally says
+                # "please try again" - it's a transient ruleset-validation
+                # timeout on their side, so a short retry is worth it.
+                is_rule_timeout = r.status_code == 409 and "Timed out validating rule" in (r.text or "")
+                if is_rule_timeout and attempt < max_attempts:
+                    wait_seconds = 5 * attempt
+                    print(f"⚠️ Report upload attempt {attempt}/{max_attempts} hit a rule-validation "
+                          f"timeout (409); retrying in {wait_seconds}s...")
+                    time.sleep(wait_seconds)
+                    continue
+
+                break
+
+            if r is None or r.status_code not in (200, 201):
                 print(f"❌ Report upload failed: {r.status_code} - {r.text}")
                 return None
 

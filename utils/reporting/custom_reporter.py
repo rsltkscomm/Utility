@@ -66,6 +66,14 @@ class DetailedTestReporter:
     test_executions = []
     api_calls = []
 
+    # Caps how many network calls get captured per test case, so a chatty
+    # scenario (polling endpoints, long regression runs) can't make the
+    # report HTML balloon in size - that payload gets pushed whole to
+    # GitHub, and an oversized push is more likely to trip rule-validation
+    # timeouts on their side.
+    MAX_API_CALLS_PER_TEST_CASE = 50
+    _api_call_cap_warned = set()
+
     # Store the mapping: { "scenario_name": "testcaseID" }
     session_map = {}
 
@@ -73,6 +81,7 @@ class DetailedTestReporter:
     def create_detail_report(cls):
         cls.test_executions = []
         cls.api_calls = []
+        cls._api_call_cap_warned = set()
 
     @classmethod
     def set_session_map(cls, mapping):
@@ -82,6 +91,15 @@ class DetailedTestReporter:
     def record_api_call(cls, test_case_id, method, url, status_code, duration_ms,
                          request_body=None, response_body=None,
                          request_headers=None, response_headers=None, success=True):
+        if test_case_id:
+            existing_count = sum(1 for c in cls.api_calls if c.test_case_id == test_case_id)
+            if existing_count >= cls.MAX_API_CALLS_PER_TEST_CASE:
+                if test_case_id not in cls._api_call_cap_warned:
+                    print(f"⚠️ Reached {cls.MAX_API_CALLS_PER_TEST_CASE} captured network calls for "
+                          f"{test_case_id}; further calls in this scenario won't be recorded.")
+                    cls._api_call_cap_warned.add(test_case_id)
+                return None
+
         record = ApiCallRecord()
         record.test_case_id = test_case_id or ""
         record.method = (method or "").upper()
