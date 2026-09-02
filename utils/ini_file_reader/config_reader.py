@@ -24,7 +24,7 @@ class ConfigReader:
                 if file.suffix == ".ini":
                     files.append(file)
 
-        cls._config.read([str(f) for f in files])
+        cls._config.read([str(f) for f in files], encoding="utf-8")
         print(f"[CONFIG] Loaded files: {files}")
         cls._initialized = True
 
