@@ -218,17 +218,28 @@ class DetailedTestReporter:
     def log_step(cls, action, expected_result, actual_result, status: bool, page=None):
         from utils.excel_helper.test_context import TestContext
         test_case_id = getattr(TestContext, "current_testcase_id", None)
-        if not test_case_id:
-            print("⚠️ Cannot log step without an active test_case_id in TestContext.")
-            return
 
-        step_status = StepStatus.PASS if status else StepStatus.FAIL
-
-        execution = cls._latest_execution(test_case_id)
+        execution = cls._latest_execution(test_case_id) if test_case_id else None
 
         if not execution:
-            print(f"⚠️ Cannot find active test execution for {test_case_id}.")
-            return
+            # Never silently drop a step. If current_testcase_id is missing
+            # or points at a test case with no matching execution (stale
+            # pointer left over from a previous Test Case ID), fall back to
+            # the most recently created execution - that is always the test
+            # case that is actually running right now - instead of losing
+            # this step from the report entirely.
+            if cls.test_executions:
+                execution = cls.test_executions[-1]
+                print(
+                    f"⚠️ current_testcase_id '{test_case_id}' has no matching test execution. "
+                    f"Attaching this step to the most recently started test case "
+                    f"'{execution.test_case_id}' instead."
+                )
+            else:
+                print("⚠️ Cannot log step: no active test_case_id and no test execution exists yet.")
+                return
+
+        step_status = StepStatus.PASS if status else StepStatus.FAIL
 
         step = TestStep()
         step.step_no = len(execution.steps) + 1
