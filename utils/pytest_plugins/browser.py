@@ -157,17 +157,19 @@ def browser_instance(playwright,request):
                     test_case_ids = getattr(TestContext, "current_testcase_ids", None) or (
                         [test_case_id] if test_case_id else []
                     )
-                    if test_case_id:
+                    effective_test_id = test_case_id or (test_case_ids[0] if test_case_ids else method_name)
+                    if effective_test_id:
                         try:
                             url = MEDIA_UPLOADER.upload(
                                 file_path=new_path,
-                                test_name=test_case_id,
+                                test_name=effective_test_id,
                                 file_type="video",
                                 run_id=ConfigReader.get_property("RUN_ID", "") or os.getenv("RUN_ID", ""),
                                 worker_id=worker_id,
                             )
                             if url:
-                                for tc_id in test_case_ids:
+                                target_ids = test_case_ids if test_case_ids else [effective_test_id]
+                                for tc_id in target_ids:
                                     DetailedTestReporter.attach_video(tc_id, url)
                                 print(f"\n[VIDEO] Uploaded video and attached URL: {url}")
                         except Exception as upload_error:
