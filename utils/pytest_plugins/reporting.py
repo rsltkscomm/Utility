@@ -3,13 +3,12 @@ import time
 from datetime import datetime
 from utils.ini_file_reader.config_reader import ConfigReader
 from utils.reporting.custom_reporter import DetailedTestReporter, SummaryReportGenerator
-from dotenv import load_dotenv
 from utils.excel_helper.excel_report_generator import ExcelReportGenerator
 from utils.constants.framework_constants import FrameworkConstants
 
 
 def pytest_sessionstart(session):
-    load_dotenv()
+    ConfigReader._load_config()
 
     # Store start time
     # Store start time

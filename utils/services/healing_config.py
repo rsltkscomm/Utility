@@ -10,7 +10,7 @@ def _truthy(value, default="yes") -> bool:
 
 
 def healing_enabled() -> bool:
-    env = os.getenv("HEALING_ENABLED")
+    env = ConfigReader.get_property("HEALING_ENABLED") or os.getenv("HEALING_ENABLED")
     if env is not None:
         return _truthy(env)
     try:
@@ -20,7 +20,7 @@ def healing_enabled() -> bool:
 
 
 def ai_healing_enabled() -> bool:
-    env = os.getenv("HEALING_AI_ENABLED")
+    env = ConfigReader.get_property("HEALING_AI_ENABLED") or os.getenv("HEALING_AI_ENABLED")
     if env is not None:
         return _truthy(env)
     try:
@@ -30,7 +30,7 @@ def ai_healing_enabled() -> bool:
 
 
 def ai_provider() -> str:
-    env = os.getenv("HEALING_AI_PROVIDER", "").strip().lower()
+    env = (ConfigReader.get_property("HEALING_AI_PROVIDER", "") or os.getenv("HEALING_AI_PROVIDER", "")).strip().lower()
     ini_key = openrouter_api_key()
     if ini_key and env in ("", "anthropic"):
         return "openrouter"
@@ -42,7 +42,7 @@ def ai_provider() -> str:
 
 
 def openrouter_api_key() -> str:
-    key = os.getenv("OPENROUTER_API_KEY", "").strip()
+    key = (ConfigReader.get_property("OPENROUTER_API_KEY", "") or os.getenv("OPENROUTER_API_KEY", "")).strip()
     if key:
         return key
     try:
@@ -52,7 +52,7 @@ def openrouter_api_key() -> str:
 
 
 def openrouter_base_url() -> str:
-    env = os.getenv("OPENROUTER_BASE_URL", "").strip()
+    env = (ConfigReader.get_property("OPENROUTER_BASE_URL", "") or os.getenv("OPENROUTER_BASE_URL", "")).strip()
     if env:
         return env.rstrip("/")
     try:
@@ -62,7 +62,7 @@ def openrouter_base_url() -> str:
 
 
 def openrouter_model() -> str:
-    env = os.getenv("OPENROUTER_MODEL", "").strip()
+    env = (ConfigReader.get_property("OPENROUTER_MODEL", "") or os.getenv("OPENROUTER_MODEL", "")).strip()
     if env:
         return env
     try:
@@ -72,15 +72,16 @@ def openrouter_model() -> str:
 
 
 def anthropic_api_key() -> str:
-    return os.getenv("ANTHROPIC_API_KEY", "").strip()
+    return (ConfigReader.get_property("ANTHROPIC_API_KEY", "") or os.getenv("ANTHROPIC_API_KEY", "")).strip()
 
 
 def anthropic_model() -> str:
-    return os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+    return ConfigReader.get_property("ANTHROPIC_MODEL", "claude-sonnet-4-6") or os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 
 
 def max_dom_chars() -> int:
     try:
-        return int(os.getenv("HEALING_MAX_DOM_CHARS", "12000"))
-    except ValueError:
+        val = ConfigReader.get_property("HEALING_MAX_DOM_CHARS") or os.getenv("HEALING_MAX_DOM_CHARS", "12000")
+        return int(val)
+    except (ValueError, TypeError):
         return 12000

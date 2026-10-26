@@ -1086,17 +1086,23 @@ document.addEventListener('DOMContentLoaded', function() {
         performanceReportContent = SummaryReportGenerator.generate_performance_html_from_json(json_str)
         executionDate = data.get("meta", {}).get("executionDate", "")
 
-        companyLogoUrl = os.environ.get(
+        companyLogoUrl = ConfigReader.get_property(
             "CompanyLogo",
-            "https://www.resulticks.com/images/logos/resulticks-logo-blue.svg"
+            os.environ.get(
+                "CompanyLogo",
+                "https://www.resulticks.com/images/logos/resulticks-logo-blue.svg"
+            )
         )
-        productLogoUrl = os.environ.get(
+        productLogoUrl = ConfigReader.get_property(
             "PRODUCTLOGO",
-            "https://run19.resul.io/assets/resulticks-logo-white-391eec89.svg"
+            os.environ.get(
+                "PRODUCTLOGO",
+                "https://run19.resul.io/assets/resulticks-logo-white-391eec89.svg"
+            )
         )
 
         overallDurationFormatted = SummaryReportGenerator.format_millis_as_hms(duration)
-        reportTitle = os.environ.get("reportTitle", "Automation Test Summary Report")
+        reportTitle = ConfigReader.get_property("reportTitle", os.environ.get("reportTitle", "Automation Test Summary Report"))
 
         slaPercentage = ((pass_c / total) * 100) if total > 0 else 0
         slaFormatted = f"{int(slaPercentage)}%"

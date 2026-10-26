@@ -35,7 +35,7 @@ class HealingPlaywrightActions(PlaywrightActions):
                 pass
 
     def _project_name(self) -> str:
-        return os.getenv("PROJECT_NAME") or FrameworkConstants.PROJECT_NAME or "Resul"
+        return ConfigReader.get_property("PROJECT_NAME") or os.getenv("PROJECT_NAME") or FrameworkConstants.PROJECT_NAME or "Resul"
 
     def _environment_name(self) -> str:
         env = os.getenv("Environment", "").strip()

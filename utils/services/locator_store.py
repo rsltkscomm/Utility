@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional
 
 import requests
 
+from utils.ini_file_reader.config_reader import ConfigReader
 from utils.services.healing_config import healing_enabled
 
 
@@ -18,11 +19,11 @@ class LocatorStore:
     _api_warning_shown = False
 
     def __init__(self):
-        self.base_url = os.getenv("MEDIA_SERVER_URL", "").rstrip("/")
-        self.token = os.getenv("MEDIA_SERVER_TOKEN", "")
+        self.base_url = (ConfigReader.get_property("MEDIA_SERVER_URL", "") or os.getenv("MEDIA_SERVER_URL", "")).rstrip("/")
+        self.token = ConfigReader.get_property("MEDIA_SERVER_TOKEN", "") or os.getenv("MEDIA_SERVER_TOKEN", "")
         self.enabled = healing_enabled()
-        self.retries = int(os.getenv("MEDIA_UPLOAD_RETRIES", "3"))
-        self.timeout = int(os.getenv("MEDIA_UPLOAD_TIMEOUT", "60"))
+        self.retries = int(ConfigReader.get_property("MEDIA_UPLOAD_RETRIES") or os.getenv("MEDIA_UPLOAD_RETRIES", "3"))
+        self.timeout = int(ConfigReader.get_property("MEDIA_UPLOAD_TIMEOUT") or os.getenv("MEDIA_UPLOAD_TIMEOUT", "60"))
 
     def _cache_key(
         self, project: str, environment: str, page_class: str, locator_name: str

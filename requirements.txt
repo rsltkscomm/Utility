@@ -6,4 +6,3 @@ pymongo
 pytest-playwright
 faker
 pillow
-python-dotenv

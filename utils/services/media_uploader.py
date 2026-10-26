@@ -4,6 +4,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
+from utils.ini_file_reader.config_reader import ConfigReader
 
 
 class MediaUploadError(Exception):
@@ -16,25 +17,27 @@ _CIRCUIT_REASON = ""
 
 def _env_int(name, default):
     try:
-        return int(os.getenv(name, str(default)))
+        val = ConfigReader.get_property(name) or os.getenv(name, str(default))
+        return int(val)
     except (TypeError, ValueError):
         return default
 
 
 def _upload_required():
-    return os.getenv("MEDIA_UPLOAD_REQUIRED", "no").lower() == "yes"
+    val = ConfigReader.get_property("MEDIA_UPLOAD_REQUIRED") or os.getenv("MEDIA_UPLOAD_REQUIRED", "no")
+    return str(val).lower() == "yes"
 
 
 class MediaUploader:
     def __init__(self):
-        self.base_url = os.getenv("MEDIA_SERVER_URL", "").rstrip("/")
-        self.token = os.getenv("MEDIA_SERVER_TOKEN", "")
-        self.enabled = os.getenv("MEDIA_UPLOAD_ENABLED", "yes").lower() == "yes"
+        self.base_url = (ConfigReader.get_property("MEDIA_SERVER_URL", "") or os.getenv("MEDIA_SERVER_URL", "")).rstrip("/")
+        self.token = ConfigReader.get_property("MEDIA_SERVER_TOKEN", "") or os.getenv("MEDIA_SERVER_TOKEN", "")
+        self.enabled = (ConfigReader.get_property("MEDIA_UPLOAD_ENABLED") or os.getenv("MEDIA_UPLOAD_ENABLED", "yes")).lower() == "yes"
         self.retries = max(1, _env_int("MEDIA_UPLOAD_RETRIES", 1))
         self.connect_timeout = max(1, _env_int("MEDIA_UPLOAD_CONNECT_TIMEOUT", 1))
         self.read_timeout = max(1, _env_int("MEDIA_UPLOAD_READ_TIMEOUT", _env_int("MEDIA_UPLOAD_TIMEOUT", 2)))
         self.circuit_open_seconds = max(0, _env_int("MEDIA_UPLOAD_CIRCUIT_OPEN_SECONDS", 300))
-        self.public_base_url = os.getenv("MEDIA_PUBLIC_BASE_URL", "").rstrip("/")
+        self.public_base_url = (ConfigReader.get_property("MEDIA_PUBLIC_BASE_URL", "") or os.getenv("MEDIA_PUBLIC_BASE_URL", "")).rstrip("/")
 
     def _public_url(self, returned_url):
         if not returned_url or not self.public_base_url:

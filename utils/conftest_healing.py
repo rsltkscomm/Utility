@@ -2,16 +2,10 @@ import os
 import sys
 
 import pytest
-from dotenv import load_dotenv
+from utils.constants.framework_constants import FrameworkConstants
 from utils.ini_file_reader.config_reader import ConfigReader
 
-env_path = os.path.join(os.path.dirname(__file__), 'environment.env')
-if os.path.exists(env_path):
-    load_dotenv(env_path)
-
-from utils.constants.framework_constants import FrameworkConstants
-
-project = os.getenv("PROJECT_NAME") or "Resul"
+project = ConfigReader.get_property("PROJECT_NAME", "Resul") or os.getenv("PROJECT_NAME") or "Resul"
 FrameworkConstants.PROJECT_NAME = project
 
 from utils.baseclass.HealingPlaywrightActions import HealingPlaywrightActions
@@ -87,7 +81,7 @@ def pytest_configure(config):
         from utils.services.healing_config import healing_enabled
 
         if healing_enabled():
-            base = os.getenv("MEDIA_SERVER_URL", "").rstrip("/")
+            base = (ConfigReader.get_property("MEDIA_SERVER_URL", "") or os.getenv("MEDIA_SERVER_URL", "")).rstrip("/")
             if base:
                 spec = requests.get(f"{base}/openapi.json", timeout=5).json()
                 if not any("locator" in p for p in spec.get("paths", {})):

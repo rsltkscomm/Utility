@@ -3,9 +3,6 @@ import os
 import uuid
 
 import pytest
-from dotenv import load_dotenv
-
-load_dotenv()
 
 from utils.excel_helper.test_context import TestContext
 from utils.ini_file_reader.config_reader import ConfigReader
@@ -95,12 +92,12 @@ def browser_instance(playwright,request):
     browser_name = ConfigReader.get_property("Browser").lower()
     environment = ConfigReader.get_property("Environment").upper()
 
-    service_url = os.getenv("PLAYWRIGHT_SERVICE_URL", "").strip()
-    service_access_token = os.getenv("PLAYWRIGHT_SERVICE_ACCESS_TOKEN", "").strip()
-    service_os = os.getenv("PLAYWRIGHT_SERVICE_OS", "windows").strip()
+    service_url = (ConfigReader.get_property("PLAYWRIGHT_SERVICE_URL", "") or os.getenv("PLAYWRIGHT_SERVICE_URL", "")).strip()
+    service_access_token = (ConfigReader.get_property("PLAYWRIGHT_SERVICE_ACCESS_TOKEN", "") or os.getenv("PLAYWRIGHT_SERVICE_ACCESS_TOKEN", "")).strip()
+    service_os = (ConfigReader.get_property("PLAYWRIGHT_SERVICE_OS", "windows") or os.getenv("PLAYWRIGHT_SERVICE_OS", "windows")).strip()
 
     if service_url:
-        run_id = os.getenv("PLAYWRIGHT_SERVICE_RUN_ID", str(uuid.uuid4()))
+        run_id = ConfigReader.get_property("PLAYWRIGHT_SERVICE_RUN_ID", "") or os.getenv("PLAYWRIGHT_SERVICE_RUN_ID", str(uuid.uuid4()))
         ws_endpoint = (
             f"{service_url}&os={service_os}&runId={run_id}&api-version=2023-10-01-preview"
             if "?" in service_url
@@ -166,7 +163,7 @@ def browser_instance(playwright,request):
                                 file_path=new_path,
                                 test_name=test_case_id,
                                 file_type="video",
-                                run_id=os.getenv("RUN_ID", ""),
+                                run_id=ConfigReader.get_property("RUN_ID", "") or os.getenv("RUN_ID", ""),
                                 worker_id=worker_id,
                             )
                             if url:

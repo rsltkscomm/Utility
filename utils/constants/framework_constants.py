@@ -1,8 +1,7 @@
 import os
 from pathlib import Path
 import platform
-from dotenv import load_dotenv
-load_dotenv()
+
 
 class FrameworkConstants():
     BASE_PATH = (
@@ -17,7 +16,7 @@ class FrameworkConstants():
     DYNAMIC_PATH = Path(os.getcwd()) / "loc_utils" / "data" / "DynamicFile"
     DOWNLOADED_FILE_PATH = Path(os.getcwd()) / "loc_utils" / "data" / "downloaded_file"
     UPLOAD_FILE_PATH = Path(os.getcwd()) / "loc_utils" / "data" / "UploadFiles"
-    PROJECT_NAME = os.getenv("PROJECT_NAME")
+    PROJECT_NAME = os.getenv("PROJECT_NAME", "Resul") or "Resul"
     PROJECT_DIR = os.path.join(os.getcwd(), "features")
     MARKETING_STAR_DAILY_PATH = ONEDRIVE_BASE_PATH / "MarketingStarDailyChecklist"
     MARKETING_STAR_DEPLOY_PATH = ONEDRIVE_BASE_PATH / "MarketingStarDeploymentChecklist"
@@ -33,7 +32,7 @@ class FrameworkConstants():
 
     @staticmethod
     def get_default_file_path():
-        return FrameworkConstants.BASE_PATH / FrameworkConstants.PROJECT_NAME
+        return FrameworkConstants.BASE_PATH / (FrameworkConstants.PROJECT_NAME or "Resul")
 
     @staticmethod
     def get_credential_file_path():
@@ -42,6 +41,12 @@ class FrameworkConstants():
     @staticmethod
     def get_properties_path():
         return FrameworkConstants.get_default_file_path() / "Properties"
+
+    @staticmethod
+    def get_newenv_path():
+        if platform.system().lower() == "windows":
+            return Path(r"C:\AQApycred\Resul\Properties\newenv.ini")
+        return FrameworkConstants.get_properties_path() / "newenv.ini"
 
     @staticmethod
     def get_script_details_file():
