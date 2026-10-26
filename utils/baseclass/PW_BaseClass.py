@@ -1345,3 +1345,15 @@ class PlaywrightActions(WebActions):
         except Exception as e:
             print(f"Error in file_handles: {e}")
             return csv_data
+
+    def send_Value_Sequentially(self, locator, value: str) -> bool:
+        try:
+            element = self.page.locator(locator)
+            element.click()
+            element.press("Control+A")
+            element.press("Backspace")
+            element.press("End")
+            element.press_sequentially(str(value), delay=50)
+            return True
+        except Exception as e:
+            return False
