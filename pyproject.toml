@@ -18,7 +18,8 @@ classifiers = [
 dependencies = [
     "pytest",
     "playwright",
-    "pandas"
+    "pandas",
+    "openpyxl"
 ]
 
 [tool.setuptools.packages.find]

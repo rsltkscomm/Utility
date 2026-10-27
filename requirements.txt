@@ -6,3 +6,4 @@ pymongo
 pytest-playwright
 faker
 pillow
+openpyxl
